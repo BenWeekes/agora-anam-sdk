@@ -169,12 +169,19 @@ function App() {
     }
   }, [urlParams, isAppConnected, contentManager]);
 
-  // Connect to Anam avatar when we have session token
+
+// Connect to Anam avatar when we have session token
   useEffect(() => {
-    if (anamSessionToken && connectionState.agent.connected && !connectionState.avatar.wsConnected) {
+    if (anamSessionToken && connectionState.agent.connected && !connectionState.avatar.wsConnected && anamClient) {
+      console.log("App.js: Conditions met to connect avatar:", {
+        hasToken: !!anamSessionToken,
+        agentConnected: connectionState.agent.connected,
+        avatarNotConnected: !connectionState.avatar.wsConnected,
+        hasAnamClient: !!anamClient
+      });
       connectAvatar();
     }
-  }, [anamSessionToken, connectionState.agent.connected, connectionState.avatar.wsConnected, connectAvatar]);
+  }, [anamSessionToken, connectionState.agent.connected, connectionState.avatar.wsConnected, anamClient, connectAvatar]);
 
   // Toggle fullscreen mode
   const toggleFullscreen = () => {

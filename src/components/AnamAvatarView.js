@@ -17,21 +17,72 @@ export const AnamAvatarView = ({
 }) => {
   const videoRef = useRef(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
+  const [isStreamingStarted, setIsStreamingStarted] = useState(false);
+
+  // Debug log to check what props we're receiving
+  useEffect(() => {
+    console.log("AnamAvatarView props:", {
+      isAppConnected,
+      isConnectInitiated,
+      isAvatarLoaded,
+      hasAnamClient: !!anamClient,
+      isFullscreen,
+      isPureChatMode
+    });
+  }, [isAppConnected, isConnectInitiated, isAvatarLoaded, anamClient, isFullscreen, isPureChatMode]);
 
   useEffect(() => {
-    if (anamClient && videoRef.current && !isVideoReady) {
-      // Stream Anam avatar to video element
-      // The method is streamToVideoAndAudioElements, not streamToVideoElement
-      anamClient.streamToVideoAndAudioElements(videoRef.current.id)
-        .then(() => {
-          setIsVideoReady(true);
-          console.log("Anam avatar streaming started");
-        })
-        .catch((error) => {
-          console.error("Failed to stream Anam avatar:", error);
+    let isMounted = true;
+    let timeoutId = null;
+    
+    // Only attempt to stream when:
+    // 1. We have an anam client
+    // 2. The video element exists
+    // 3. We haven't already started streaming
+    // 4. The avatar is loaded (session is ready)
+    // 5. Component is still mounted
+    if (anamClient && videoRef.current && !isStreamingStarted && isAvatarLoaded && isMounted) {
+      console.log("Scheduling Anam avatar streaming...");
+      
+      // Add a small delay to ensure the session is fully established
+      timeoutId = setTimeout(() => {
+        if (!isMounted) return;
+        
+        console.log("Attempting to stream Anam avatar to video element:", videoRef.current.id);
+        console.log("Video element exists:", !!videoRef.current);
+        console.log("Anam client methods available:", {
+          streamToVideoAndAudioElements: typeof anamClient.streamToVideoAndAudioElements === 'function',
+          streamToVideoElement: typeof anamClient.streamToVideoElement === 'function',
+          stream: typeof anamClient.stream === 'function'
         });
+        
+        setIsStreamingStarted(true);
+        
+        // Stream Anam avatar to video element
+        anamClient.streamToVideoAndAudioElements(videoRef.current.id)
+          .then(() => {
+            if (isMounted) {
+              setIsVideoReady(true);
+              console.log("Anam avatar streaming started successfully");
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to stream Anam avatar:", error);
+            console.error("Error details:", error.message, error.stack);
+            if (isMounted) {
+              setIsStreamingStarted(false); // Reset so we can retry
+            }
+          });
+      }, 500); // 500ms delay
     }
-  }, [anamClient, isVideoReady]);
+    
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [anamClient, isStreamingStarted, isAvatarLoaded]);
 
   return (
     <div className={`avatar-container ${isFullscreen ? "fullscreen" : ""}`}>
@@ -70,15 +121,14 @@ export const AnamAvatarView = ({
       <video
         ref={videoRef}
         id="anam-avatar-video"
-        className={`anam-avatar ${(!isAppConnected || (isPureChatMode && !isAppConnected)) ? "hidden" : ""}`}
+        className={`anam-avatar ${(!isVideoReady || isPureChatMode) ? "hidden" : ""}`}
         autoPlay
         playsInline
-        muted
         style={{
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          backgroundColor: "transparent"
+          backgroundColor: "#000000"
         }}
       />
 
