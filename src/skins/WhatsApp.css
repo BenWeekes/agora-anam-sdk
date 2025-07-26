@@ -1,0 +1,208 @@
+/* react/src/skins/WhatsApp.css - Default WhatsApp-inspired skin */
+/* Place this file in: react/src/skins/WhatsApp.css */
+
+/* WhatsApp skin variables */
+.app-container.whatsapp-skin {
+  --primary-color: #128c7e;
+  --secondary-color: #25d366;
+  --accent-color: #00a884;
+  --chat-bg: #e5ddd5;
+  --message-own: #dcf8c6;
+  --message-other: #ffffff;
+  --text-primary: #303030;
+  --text-secondary: #666666;
+  --input-bg: #f0f0f0;
+}
+
+/* Initial screen with WhatsApp styling */
+.app-container.whatsapp-skin .initial-screen {
+  background-color: var(--primary-color);
+}
+
+/* Content wrapper for split view */
+.app-container.whatsapp-skin .content-wrapper {
+  background-color: var(--primary-color);
+}
+
+/* Container for profile image and connect button - WhatsApp style */
+.app-container.whatsapp-skin .connect-button-container {
+  background: linear-gradient(rgba(18, 140, 126), rgba(7, 94, 84));
+}
+
+/* WhatsApp style profile image */
+.app-container.whatsapp-skin .avatar-profile-image {
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* WhatsApp style video call button */
+.app-container.whatsapp-skin .connect-button {
+  background-color: var(--secondary-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.app-container.whatsapp-skin .connect-button:hover {
+  background-color: #22c55e;
+  transform: scale(1.08);
+}
+
+.app-container.whatsapp-skin .connect-button:active {
+  transform: scale(0.98);
+  background-color: #16a34a;
+}
+
+/* WhatsApp-Style Chat Interface */
+.app-container.whatsapp-skin .rtm-container {
+  background-color: var(--chat-bg);
+  background-image: url("data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 16c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm0-2c3.314 0 6-2.686 6-6s-2.686-6-6-6-6 2.686-6 6 2.686 6 6 6zm33.414-6l5.95-5.95L45.95.636 40 6.586 34.05.636 32.636 2.05 38.586 8l-5.95 5.95 1.414 1.414L40 9.414l5.95 5.95 1.414-1.414L41.414 8zM40 48c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm0-2c3.314 0 6-2.686 6-6s-2.686-6-6-6-6 2.686-6 6 2.686 6 6 6zM9.414 40l5.95-5.95-1.414-1.414L8 38.586l-5.95-5.95L.636 34.05 6.586 40l-5.95 5.95 1.414 1.414L8 41.414l5.95 5.95 1.414-1.414L9.414 40z' fill='%23cdc8c0' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
+  border-left: 1px solid #ddd;
+}
+
+/* Make chat panel background stand out more when disconnected */
+.app-container.whatsapp-skin .initial-screen .rtm-container {
+  background-color: #e0e0e0;
+  opacity: 0.95;
+}
+
+/* WhatsApp style message bubbles */
+.app-container.whatsapp-skin .rtm-message.own-message {
+  background-color: var(--message-own);
+}
+
+.app-container.whatsapp-skin .rtm-message.own-message::after {
+  border-bottom-color: var(--message-own);
+}
+
+.app-container.whatsapp-skin .rtm-message.other-message {
+  background-color: var(--message-other);
+}
+
+.app-container.whatsapp-skin .rtm-message.other-message::after {
+  border-bottom-color: var(--message-other);
+}
+
+/* Avatar styling for WhatsApp skin */
+.app-container.whatsapp-skin .rtm-message-avatar {
+  border: 2px solid var(--secondary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Initial circle styling for WhatsApp skin */
+.app-container.whatsapp-skin .rtm-message-initial-circle {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* WhatsApp style timestamp */
+.app-container.whatsapp-skin .rtm-message-time {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Date divider */
+.app-container.whatsapp-skin .date-divider {
+  background-color: #e1f2fb;
+  color: #5a6569;
+  box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+}
+
+/* WhatsApp-like input area */
+.app-container.whatsapp-skin .rtm-input-container {
+  background-color: var(--input-bg);
+  border-top: 1px solid #e0e0e0;
+}
+
+.app-container.whatsapp-skin .rtm-input {
+  border: 1px solid #dedede;
+  background-color: white;
+}
+
+.app-container.whatsapp-skin .rtm-input:focus {
+  border-color: #8fbdec;
+}
+
+.app-container.whatsapp-skin .rtm-input.disabled {
+  background-color: #f5f5f5;
+  color: #999;
+}
+
+.app-container.whatsapp-skin .rtm-placeholder {
+  color: #999;
+}
+
+.app-container.whatsapp-skin .rtm-send-button {
+  background-color: var(--accent-color);
+}
+
+.app-container.whatsapp-skin .rtm-send-button:hover {
+  background-color: #009677;
+}
+
+.app-container.whatsapp-skin .rtm-send-button:disabled {
+  background-color: #aaaaaa;
+}
+
+/* Control buttons */
+.app-container.whatsapp-skin .mic-toggle {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.app-container.whatsapp-skin .mic-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
+}
+
+.app-container.whatsapp-skin .mic-toggle.muted {
+  background-color: rgba(255, 50, 50, 0.8);
+}
+
+.app-container.whatsapp-skin .mic-toggle.muted:hover {
+  background-color: rgba(255, 50, 50, 0.9);
+}
+
+.app-container.whatsapp-skin .hangup-button {
+  background-color: rgba(220, 53, 69, 0.8);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.app-container.whatsapp-skin .hangup-button:hover {
+  background-color: rgba(220, 53, 69, 0.9);
+  transform: scale(1.05);
+}
+
+/* Fullscreen button */
+.app-container.whatsapp-skin .fullscreen-button {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+}
+
+.app-container.whatsapp-skin .fullscreen-button:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
+/* Toast styling */
+.app-container.whatsapp-skin .toast-success {
+  background-color: rgba(37, 211, 102, 0.9);
+}
+
+.app-container.whatsapp-skin .toast-error {
+  background-color: rgba(220, 53, 69, 0.9);
+}
+
+/* Typing indicator */
+.app-container.whatsapp-skin .typing-dot {
+  background-color: #999;
+}
+
+/* Loading spinner */
+.app-container.whatsapp-skin .spinner {
+  border-top-color: var(--secondary-color);
+}
+
+/* Progress indicator */
+.app-container.whatsapp-skin .progress-indicator {
+  background-color: var(--secondary-color);
+}

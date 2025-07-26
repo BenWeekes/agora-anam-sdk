@@ -1,0 +1,334 @@
+/* react/src/skins/TeamsDark.css - Microsoft Teams dark theme inspired skin */
+/* Place this file in: react/src/skins/TeamsDark.css */
+
+/* Teams Dark skin variables */
+.app-container.teamsdark-skin {
+  --primary-color: #6264a7; /* Teams purple */
+  --secondary-color: #464775;
+  --accent-color: #5b5fc7;
+  --background-dark: #1f1f23;
+  --background-darker: #161618;
+  --background-card: #292929;
+  --chat-bg: #1f1f23;
+  --message-own: #6264a7;
+  --message-other: #2d2d30;
+  --text-primary: #ffffff;
+  --text-secondary: #c8c8c8;
+  --text-muted: #8a8886;
+  --border-color: #3b3a39;
+  --hover-bg: #323130;
+  --shadow-dark: rgba(0, 0, 0, 0.3);
+  --shadow-purple: rgba(98, 100, 167, 0.2);
+}
+
+/* OVERRIDE ALL BASE COLORS */
+.app-container.teamsdark-skin .initial-screen {
+  background: var(--background-dark) !important;
+  background-color: var(--background-dark) !important;
+}
+
+.app-container.teamsdark-skin .content-wrapper {
+  background: var(--background-dark) !important;
+  background-color: var(--background-dark) !important;
+}
+
+/* Connect button container with Teams dark theme */
+.app-container.teamsdark-skin .connect-button-container {
+  background: linear-gradient(135deg, var(--background-darker) 0%, var(--background-dark) 100%) !important;
+  color: var(--text-primary);
+}
+
+/* Teams dark style profile image */
+.app-container.teamsdark-skin .avatar-profile-image {
+  border: 3px solid var(--primary-color);
+  box-shadow: 
+    0 4px 12px var(--shadow-dark),
+    0 0 0 1px var(--border-color),
+    0 0 20px var(--shadow-purple);
+}
+
+/* Teams dark style connect button */
+.app-container.teamsdark-skin .connect-button {
+  background: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
+  box-shadow: 0 4px 12px var(--shadow-purple);
+  transition: all 0.2s ease;
+  border: 1px solid var(--accent-color);
+}
+
+.app-container.teamsdark-skin .connect-button:hover {
+  transform: scale(1.05);
+  background: var(--accent-color) !important;
+  background-color: var(--accent-color) !important;
+  box-shadow: 0 6px 16px var(--shadow-purple);
+}
+
+.app-container.teamsdark-skin .connect-button:active {
+  transform: scale(0.98);
+  background: var(--secondary-color) !important;
+  background-color: var(--secondary-color) !important;
+}
+
+/* Teams dark themed chat interface */
+.app-container.teamsdark-skin .rtm-container {
+  background: var(--chat-bg) !important;
+  background-color: var(--chat-bg) !important;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Chat panel when disconnected */
+.app-container.teamsdark-skin .initial-screen .rtm-container {
+  background-color: var(--background-darker) !important;
+  background: var(--background-darker) !important;
+  opacity: 0.95;
+}
+
+/* Teams dark message bubbles */
+.app-container.teamsdark-skin .rtm-message.own-message {
+  background: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--accent-color);
+  box-shadow: 0 2px 4px var(--shadow-dark);
+}
+
+.app-container.teamsdark-skin .rtm-message.own-message::after {
+  border-bottom-color: var(--primary-color) !important;
+}
+
+.app-container.teamsdark-skin .rtm-message.other-message {
+  background: var(--message-other) !important;
+  background-color: var(--message-other) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px var(--shadow-dark);
+}
+
+.app-container.teamsdark-skin .rtm-message.other-message::after {
+  border-bottom-color: var(--message-other) !important;
+}
+
+/* Avatar styling for Teams Dark skin */
+.app-container.teamsdark-skin .rtm-message-avatar {
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 2px 4px var(--shadow-dark);
+}
+
+/* Initial circle styling for Teams Dark skin */
+.app-container.teamsdark-skin .rtm-message-initial-circle {
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px var(--shadow-dark);
+}
+
+/* Teams dark timestamp */
+.app-container.teamsdark-skin .rtm-message-time {
+  color: var(--text-muted);
+}
+
+/* Teams dark input area */
+.app-container.teamsdark-skin .rtm-input-container {
+  background: var(--background-card) !important;
+  background-color: var(--background-card) !important;
+  border-top: 1px solid var(--border-color);
+  padding: 12px;
+}
+
+.app-container.teamsdark-skin .rtm-input {
+  border: 1px solid var(--border-color);
+  background: var(--background-dark) !important;
+  background-color: var(--background-dark) !important;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.app-container.teamsdark-skin .rtm-input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px var(--shadow-purple);
+  background: var(--background-darker) !important;
+}
+
+.app-container.teamsdark-skin .rtm-input.disabled {
+  background-color: var(--hover-bg) !important;
+  background: var(--hover-bg) !important;
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+
+.app-container.teamsdark-skin .rtm-placeholder {
+  color: var(--text-muted);
+}
+
+/* Teams dark send button */
+.app-container.teamsdark-skin .rtm-send-button {
+  background: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
+  border: 1px solid var(--accent-color);
+  transition: all 0.2s ease;
+}
+
+.app-container.teamsdark-skin .rtm-send-button:hover {
+  background: var(--accent-color) !important;
+  background-color: var(--accent-color) !important;
+  transform: scale(1.05);
+}
+
+.app-container.teamsdark-skin .rtm-send-button:disabled {
+  background: var(--text-muted) !important;
+  background-color: var(--text-muted) !important;
+  border-color: var(--border-color);
+  transform: none;
+}
+
+/* Teams dark control buttons */
+.app-container.teamsdark-skin .mic-toggle {
+  background: var(--background-card) !important;
+  background-color: var(--background-card) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+}
+
+.app-container.teamsdark-skin .mic-toggle:hover {
+  background: var(--hover-bg) !important;
+  background-color: var(--hover-bg) !important;
+  border-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.app-container.teamsdark-skin .mic-toggle.muted {
+  background: #cc4125 !important;
+  background-color: #cc4125 !important;
+  color: var(--text-primary);
+  border-color: #d13438;
+}
+
+.app-container.teamsdark-skin .hangup-button {
+  background: #cc4125 !important;
+  background-color: #cc4125 !important;
+  color: var(--text-primary);
+  border: 1px solid #d13438;
+}
+
+.app-container.teamsdark-skin .hangup-button:hover {
+  background: #d13438 !important;
+  background-color: #d13438 !important;
+  transform: scale(1.05);
+}
+
+/* Teams dark fullscreen button */
+.app-container.teamsdark-skin .fullscreen-button {
+  background: var(--background-card) !important;
+  background-color: var(--background-card) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.app-container.teamsdark-skin .fullscreen-button:hover {
+  background: var(--hover-bg) !important;
+  background-color: var(--hover-bg) !important;
+  border-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+/* Teams dark toast notifications */
+.app-container.teamsdark-skin .toast-success {
+  background: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--accent-color);
+  box-shadow: 0 4px 12px var(--shadow-dark);
+}
+
+.app-container.teamsdark-skin .toast-error {
+  background: #cc4125 !important;
+  background-color: #cc4125 !important;
+  color: var(--text-primary);
+  border: 1px solid #d13438;
+  box-shadow: 0 4px 12px var(--shadow-dark);
+}
+
+/* Teams dark date divider */
+.app-container.teamsdark-skin .date-divider {
+  background: var(--background-card) !important;
+  background-color: var(--background-card) !important;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px var(--shadow-dark);
+}
+
+/* Teams dark typing indicator */
+.app-container.teamsdark-skin .typing-dot {
+  background: var(--text-muted) !important;
+  background-color: var(--text-muted) !important;
+}
+
+/* Teams dark empty state */
+.app-container.teamsdark-skin .rtm-empty-state {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Teams dark loading indicators */
+.app-container.teamsdark-skin .progress-indicator {
+  background: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
+}
+
+.app-container.teamsdark-skin .spinner {
+  border-color: var(--border-color);
+  border-top-color: var(--primary-color) !important;
+}
+
+.app-container.teamsdark-skin .initial-loading-text {
+  color: var(--text-primary);
+}
+
+.app-container.teamsdark-skin .initial-loading-content .spinner-circle {
+  border-color: var(--border-color);
+  border-top-color: var(--primary-color) !important;
+}
+
+/* Teams dark content container */
+.app-container.teamsdark-skin .content-container {
+  background: var(--background-dark) !important;
+  border: 1px solid var(--border-color);
+}
+
+.app-container.teamsdark-skin .content-close-btn {
+  background: var(--background-card) !important;
+  background-color: var(--background-card) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.app-container.teamsdark-skin .content-close-btn:hover {
+  background: var(--hover-bg) !important;
+  background-color: var(--hover-bg) !important;
+  transform: scale(1.05);
+}
+
+/* Avatar container */
+.left-section {
+  background-color: var(--background-darker) !important;
+}
+
+.app-container.teamsdark-skin .avatar-container {
+  background-color: transparent !important;
+}
+
+/* Profile overlay */
+.app-container.teamsdark-skin .profile-overlay {
+  background-color: rgba(31, 31, 35, 0.8) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* Pulse rings */
+.app-container.teamsdark-skin .pulse-ring-1 {
+  border-color: var(--primary-color) !important;
+}
+
+.app-container.teamsdark-skin .pulse-ring-2 {
+  border-color: var(--accent-color) !important;
+}
