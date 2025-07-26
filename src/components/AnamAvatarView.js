@@ -21,7 +21,8 @@ export const AnamAvatarView = ({
   useEffect(() => {
     if (anamClient && videoRef.current && !isVideoReady) {
       // Stream Anam avatar to video element
-      anamClient.streamToVideoElement(videoRef.current.id)
+      // The method is streamToVideoAndAudioElements, not streamToVideoElement
+      anamClient.streamToVideoAndAudioElements(videoRef.current.id)
         .then(() => {
           setIsVideoReady(true);
           console.log("Anam avatar streaming started");

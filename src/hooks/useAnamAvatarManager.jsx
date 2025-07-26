@@ -4,10 +4,10 @@ import { createClient } from "@anam-ai/js-sdk";
 import { callNativeAppFunction } from "../utils/nativeBridge";
 import { ConnectionState } from "../utils/connectionState";
 
-// Based on the documentation, these are the event names as strings
-const ANAM_EVENTS = {
+// Event names as strings based on the documentation
+const AnamEvent = {
   SESSION_READY: 'SESSION_READY',
-  CONNECTION_CLOSED: 'CONNECTION_CLOSED', 
+  CONNECTION_CLOSED: 'CONNECTION_CLOSED',
   MESSAGE_HISTORY_UPDATED: 'MESSAGE_HISTORY_UPDATED',
   TALK_STARTED: 'TALK_STARTED',
   TALK_ENDED: 'TALK_ENDED',
@@ -40,6 +40,7 @@ export default function useAnamAvatarManager({
     if (anamClient && isAnamReady) {
       console.log("Sending message to Anam avatar:", nextMessage);
       
+      // According to docs, the method is talk()
       anamClient.talk(nextMessage)
         .then(() => {
           console.log("Message sent successfully to Anam");
@@ -66,8 +67,14 @@ export default function useAnamAvatarManager({
       try {
         const client = createClient(anamSessionToken);
         
-        // Set up event listeners using string event names
-        client.addListener(ANAM_EVENTS.SESSION_READY, () => {
+        // Debug: Log the client object and its properties
+        console.log("Created Anam client:", client);
+        console.log("Client type:", typeof client);
+        console.log("Client methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(client)));
+        console.log("Client properties:", Object.keys(client));
+        
+        // Set up event listeners using event names
+        client.addListener(AnamEvent.SESSION_READY, () => {
           console.log("Anam session ready");
           setIsAnamReady(true);
           updateConnectionState(ConnectionState.AVATAR_READY);
@@ -75,24 +82,24 @@ export default function useAnamAvatarManager({
           callNativeAppFunction("anamSessionReady");
         });
 
-        client.addListener(ANAM_EVENTS.CONNECTION_CLOSED, () => {
+        client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
           console.log("Anam connection closed");
           setIsAnamReady(false);
           updateConnectionState(ConnectionState.AVATAR_WS_DISCONNECT);
           callNativeAppFunction("anamConnectionClosed");
         });
 
-        client.addListener(ANAM_EVENTS.MESSAGE_HISTORY_UPDATED, (messages) => {
+        client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages) => {
           console.log("Anam message history updated:", messages);
           eventHandlerRef.current["message-history-updated"]?.(messages);
         });
 
-        client.addListener(ANAM_EVENTS.TALK_STARTED, () => {
+        client.addListener(AnamEvent.TALK_STARTED, () => {
           console.log("Anam talk started");
           eventHandlerRef.current["avatar-status-update"]?.({ avatarStatus: 1 });
         });
 
-        client.addListener(ANAM_EVENTS.TALK_ENDED, () => {
+        client.addListener(AnamEvent.TALK_ENDED, () => {
           console.log("Anam talk ended");
           eventHandlerRef.current["avatar-status-update"]?.({ avatarStatus: 0 });
           isProcessingRef.current = false;
@@ -116,10 +123,10 @@ export default function useAnamAvatarManager({
         processMessageQueue();
       };
 
-      anamClient.addListener(ANAM_EVENTS.TALK_ENDED, handleTalkEnded);
+      anamClient.addListener(AnamEvent.TALK_ENDED, handleTalkEnded);
       
       return () => {
-        anamClient.removeListener(ANAM_EVENTS.TALK_ENDED, handleTalkEnded);
+        anamClient.removeListener(AnamEvent.TALK_ENDED, handleTalkEnded);
       };
     }
   }, [anamClient, processMessageQueue]);
@@ -175,6 +182,7 @@ export default function useAnamAvatarManager({
   const disconnectAvatar = useCallback(() => {
     if (anamClient) {
       try {
+        // According to docs, the method is stopStreaming()
         anamClient.stopStreaming();
       } catch (error) {
         console.error("Error stopping Anam streaming:", error);

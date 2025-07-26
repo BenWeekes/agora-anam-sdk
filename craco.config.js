@@ -22,6 +22,28 @@ module.exports = {
         webpackConfig.module.rules.unshift(modelFileRule);
       }
 
+      // Disable source-map-loader for @anam-ai/js-sdk
+      webpackConfig.module.rules.forEach(rule => {
+        if (rule.oneOf) {
+          rule.oneOf.forEach(loader => {
+            if (loader.use && Array.isArray(loader.use)) {
+              loader.use = loader.use.filter(u => {
+                const loaderName = typeof u === 'string' ? u : u.loader;
+                return !loaderName || !loaderName.includes('source-map-loader');
+              });
+            }
+          });
+        }
+      });
+
+      // Alternative: Completely ignore source maps for specific packages
+      webpackConfig.ignoreWarnings = [
+        {
+          module: /@anam-ai\/js-sdk/,
+          message: /Failed to parse source map/
+        }
+      ];
+
       return webpackConfig;
     },
   },
