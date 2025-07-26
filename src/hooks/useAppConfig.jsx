@@ -17,7 +17,7 @@ export const useAppConfig = () => {
     greeting: urlParams.greeting || null,
     profile: urlParams.profile || null,
     name: urlParams.name || null,
-    endpoint: urlParams.endpoint  ?? process.env.REACT_APP_AGENT_ENDPOINT,
+    endpoint: urlParams.endpoint ?? process.env.REACT_APP_AGENT_ENDPOINT,
   }));
 
   const derivedChannelName = useMemo(() => {

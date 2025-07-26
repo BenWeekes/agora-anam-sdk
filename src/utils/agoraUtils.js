@@ -23,7 +23,6 @@ export const getParamsFromUrl = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const channelParam = urlParams.get("channel");
     const avatarIdParam = urlParams.get("avatarId");
-    const trulienceSdkURL = urlParams.get("trulienceSdkURL");
     const voiceIdParam = urlParams.get("voice_id");
     const promptParam = urlParams.get("prompt");
     const greetingParam = urlParams.get("greeting");
@@ -110,8 +109,7 @@ export const getParamsFromUrl = () => {
 
     return {
       channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
-      avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
-      trulienceSdkURL: trulienceSdkURL || process.env.REACT_APP_TRULIENCE_SDK_URL,
+      avatarId: avatarIdParam || null, // Remove default env var
       voice_id: voiceIdParam || null, // Changed from voiceId to voice_id for consistency
       prompt: promptParam || null,
       greeting: greetingParam || null,
@@ -135,7 +133,7 @@ export const getParamsFromUrl = () => {
   }
   return {
     channelName: process.env.REACT_APP_AGORA_CHANNEL_NAME,
-    avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID,
+    avatarId: null,
     voice_id: null, // Changed from voiceId to voice_id for consistency
     prompt: null,
     greeting: null,

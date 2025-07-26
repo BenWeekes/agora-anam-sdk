@@ -186,7 +186,7 @@ function App() {
   };
 
   // Connect Function for normal mode
-  const connectAgoraTrulience = useCallback(async () => {
+  const connectAgoraAnam = useCallback(async () => {
     updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
     
     if (urlParams.contentType && urlParams.contentURL) {
@@ -323,7 +323,7 @@ function App() {
               avatarId={null} // No avatarId for Anam
               isPureChatMode={isPureChatMode}
               connectionState={connectionState}
-              onConnect={connectAgoraTrulience}
+              onConnect={connectAgoraAnam}
               onHangUp={handleHangup}
               getProfileImage={getAvatarProfileImage}
             />
