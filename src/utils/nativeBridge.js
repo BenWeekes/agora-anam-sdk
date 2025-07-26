@@ -88,12 +88,6 @@ export class NativeBridge {
     });
   }
 
-  trulienceDetailsUpdated({ avatarId }) {
-    this.emit("trulienceDetailsUpdated", {
-      avatarId,
-    });
-  }
-
   agoraDetailsUpdated({ appId, channelName, uid, voiceId, prompt, greeting, profile, name, endpoint }) {
     this.emit("agoraDetailsUpdated", {
       appId,

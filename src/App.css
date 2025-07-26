@@ -412,7 +412,7 @@ body {
 }
 
 /* Avatar container visibility - THIS IS THE KEY PART */
-.trulience-avatar {
+.anam-avatar {
   width: 100%;
   height: 100%;
   position: relative;
@@ -420,7 +420,7 @@ body {
 }
 
 /* When not connected, hide only the avatar itself but keep container visible */
-.avatar-container .trulience-avatar.hidden {
+.avatar-container .anam-avatar.hidden {
   opacity: 0;
 }
 
