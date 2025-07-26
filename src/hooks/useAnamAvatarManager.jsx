@@ -1,8 +1,18 @@
+// src/hooks/useAnamAvatarManager.jsx
 import { useCallback, useRef, useState, useEffect } from "react";
 import { createClient } from "@anam-ai/js-sdk";
-import { AnamEvent } from "@anam-ai/js-sdk";
 import { callNativeAppFunction } from "../utils/nativeBridge";
 import { ConnectionState } from "../utils/connectionState";
+
+// Based on the documentation, these are the event names as strings
+const ANAM_EVENTS = {
+  SESSION_READY: 'SESSION_READY',
+  CONNECTION_CLOSED: 'CONNECTION_CLOSED', 
+  MESSAGE_HISTORY_UPDATED: 'MESSAGE_HISTORY_UPDATED',
+  TALK_STARTED: 'TALK_STARTED',
+  TALK_ENDED: 'TALK_ENDED',
+  MESSAGE_STREAM_EVENT_RECEIVED: 'MESSAGE_STREAM_EVENT_RECEIVED'
+};
 
 export default function useAnamAvatarManager({
   showToast,
@@ -17,50 +27,6 @@ export default function useAnamAvatarManager({
 
   const eventHandlerRef = useRef();
   eventHandlerRef.current = eventHandler;
-
-  // Initialize Anam client when session token is available
-  useEffect(() => {
-    if (anamSessionToken && !anamClient) {
-      console.log("Initializing Anam client with session token");
-      
-      const client = createClient(anamSessionToken);
-      
-      // Set up event listeners
-      client.addListener(AnamEvent.SESSION_READY, () => {
-        console.log("Anam session ready");
-        setIsAnamReady(true);
-        updateConnectionState(ConnectionState.AVATAR_READY);
-        updateConnectionState(ConnectionState.AVATAR_LOADED);
-        callNativeAppFunction("anamSessionReady");
-      });
-
-      client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
-        console.log("Anam connection closed");
-        setIsAnamReady(false);
-        updateConnectionState(ConnectionState.AVATAR_WS_DISCONNECT);
-        callNativeAppFunction("anamConnectionClosed");
-      });
-
-      client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages) => {
-        console.log("Anam message history updated:", messages);
-        eventHandlerRef.current["message-history-updated"]?.(messages);
-      });
-
-      client.addListener(AnamEvent.TALK_STARTED, () => {
-        console.log("Anam talk started");
-        eventHandlerRef.current["avatar-status-update"]?.({ avatarStatus: 1 });
-      });
-
-      client.addListener(AnamEvent.TALK_ENDED, () => {
-        console.log("Anam talk ended");
-        eventHandlerRef.current["avatar-status-update"]?.({ avatarStatus: 0 });
-        // Process next message in queue
-        processMessageQueue();
-      });
-
-      setAnamClient(client);
-    }
-  }, [anamSessionToken, anamClient, updateConnectionState]);
 
   // Process message queue
   const processMessageQueue = useCallback(() => {
@@ -92,6 +58,56 @@ export default function useAnamAvatarManager({
     }
   }, [anamClient, isAnamReady]);
 
+  // Initialize Anam client when session token is available
+  useEffect(() => {
+    if (anamSessionToken && !anamClient) {
+      console.log("Initializing Anam client with session token");
+      
+      try {
+        const client = createClient(anamSessionToken);
+        
+        // Set up event listeners using string event names
+        client.addListener(ANAM_EVENTS.SESSION_READY, () => {
+          console.log("Anam session ready");
+          setIsAnamReady(true);
+          updateConnectionState(ConnectionState.AVATAR_READY);
+          updateConnectionState(ConnectionState.AVATAR_LOADED);
+          callNativeAppFunction("anamSessionReady");
+        });
+
+        client.addListener(ANAM_EVENTS.CONNECTION_CLOSED, () => {
+          console.log("Anam connection closed");
+          setIsAnamReady(false);
+          updateConnectionState(ConnectionState.AVATAR_WS_DISCONNECT);
+          callNativeAppFunction("anamConnectionClosed");
+        });
+
+        client.addListener(ANAM_EVENTS.MESSAGE_HISTORY_UPDATED, (messages) => {
+          console.log("Anam message history updated:", messages);
+          eventHandlerRef.current["message-history-updated"]?.(messages);
+        });
+
+        client.addListener(ANAM_EVENTS.TALK_STARTED, () => {
+          console.log("Anam talk started");
+          eventHandlerRef.current["avatar-status-update"]?.({ avatarStatus: 1 });
+        });
+
+        client.addListener(ANAM_EVENTS.TALK_ENDED, () => {
+          console.log("Anam talk ended");
+          eventHandlerRef.current["avatar-status-update"]?.({ avatarStatus: 0 });
+          isProcessingRef.current = false;
+          // Process next message in queue
+          processMessageQueue();
+        });
+
+        setAnamClient(client);
+      } catch (error) {
+        console.error("Failed to create Anam client:", error);
+        showToast("Failed to initialize Anam client", error.message, true);
+      }
+    }
+  }, [anamSessionToken, anamClient, updateConnectionState, showToast, processMessageQueue]);
+
   // Handle talk ended to process queue
   useEffect(() => {
     if (anamClient) {
@@ -100,10 +116,10 @@ export default function useAnamAvatarManager({
         processMessageQueue();
       };
 
-      anamClient.addListener(AnamEvent.TALK_ENDED, handleTalkEnded);
+      anamClient.addListener(ANAM_EVENTS.TALK_ENDED, handleTalkEnded);
       
       return () => {
-        anamClient.removeListener(AnamEvent.TALK_ENDED, handleTalkEnded);
+        anamClient.removeListener(ANAM_EVENTS.TALK_ENDED, handleTalkEnded);
       };
     }
   }, [anamClient, processMessageQueue]);
@@ -129,7 +145,7 @@ export default function useAnamAvatarManager({
     // Remove any HTML tags or special formatting
     const cleanMessage = message.replace(/<[^>]*>/g, '').trim();
     if (cleanMessage) {
-      return sendMessageToAvatar(cleanMessage);
+      sendMessageToAvatar(cleanMessage);
     }
     return cleanMessage;
   }, [sendMessageToAvatar]);
@@ -158,7 +174,11 @@ export default function useAnamAvatarManager({
 
   const disconnectAvatar = useCallback(() => {
     if (anamClient) {
-      anamClient.stopStreaming();
+      try {
+        anamClient.stopStreaming();
+      } catch (error) {
+        console.error("Error stopping Anam streaming:", error);
+      }
       setIsAnamReady(false);
       messageQueueRef.current = [];
       isProcessingRef.current = false;

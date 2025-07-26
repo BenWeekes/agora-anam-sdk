@@ -1,3 +1,4 @@
+// src/hooks/useAgoraRTC.jsx
 import { useState, useCallback, useEffect } from 'react';
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { ConnectionState } from "../utils/connectionState";

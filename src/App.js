@@ -1,3 +1,4 @@
+// src/App.js
 import React, {
   useCallback,
   useEffect,
@@ -160,13 +161,13 @@ function App() {
         alt: urlParams.contentALT || "Content"
       });
     }
-  }, [urlParams, ]);
+  }, [urlParams, contentManager]);
 
   useEffect(() => {
     if (isAppConnected && urlParams.contentType && urlParams.contentURL) {
       contentManager.showContentAndPlayVideo()
     }
-  }, [urlParams, isAppConnected, contentManager.playVideo]);
+  }, [urlParams, isAppConnected, contentManager]);
 
   // Connect to Anam avatar when we have session token
   useEffect(() => {
@@ -185,24 +186,8 @@ function App() {
     setIsFullscreen(!isFullscreen);
   };
 
-  // Connect Function for normal mode
-  const connectAgoraAnam = useCallback(async () => {
-    updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
-    
-    if (urlParams.contentType && urlParams.contentURL) {
-      contentManager.unlockVideo();
-    }
-
-    // Connect to Agora (which will also get Anam session token)
-    const result = await agoraConnection.connectToAgora()
-    if(!result) {
-      handleHangup()
-    }
-
-  }, [agoraConnection, urlParams.contentType]);
-
   // Handle hangup
-  const handleHangup = async () => {
+  const handleHangup = useCallback(async () => {
     updateConnectionState(ConnectionState.DISCONNECTING);
     
     contentManager.hideContent()
@@ -226,7 +211,23 @@ function App() {
       setIsFullscreen(false);
       setIsRtmVisible(true);
     }
-  };
+  }, [updateConnectionState, contentManager, isPureChatMode, resetAvatarToDefault, agoraConnection, disconnectAvatar, isFullscreen]);
+
+  // Connect Function for normal mode
+  const connectAgoraAnam = useCallback(async () => {
+    updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
+    
+    if (urlParams.contentType && urlParams.contentURL) {
+      contentManager.unlockVideo();
+    }
+
+    // Connect to Agora (which will also get Anam session token)
+    const result = await agoraConnection.connectToAgora()
+    if(!result) {
+      handleHangup()
+    }
+
+  }, [agoraConnection, urlParams.contentType, urlParams.contentURL, contentManager, updateConnectionState, handleHangup]);
 
   const layoutState = useLayoutState(contentManager, urlParams, orientation);
   const { isMobileView, isContentLayoutWide, isContentLayoutDefault, isAvatarOverlay, isContentLayoutWideOverlay } = layoutState;

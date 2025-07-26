@@ -1,5 +1,5 @@
+// src/components/AnamAvatarView.js
 import React, { useRef, useEffect, useState } from "react";
-import { Toast } from "./Toast";
 
 /**
  * Component to display the Anam.ai Avatar

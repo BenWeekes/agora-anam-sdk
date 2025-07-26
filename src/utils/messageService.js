@@ -1,4 +1,4 @@
-// react/src/utils/messageService.js - Generic version without Trulience-specific logic
+// src/utils/messageService.js
 import { decodeStreamMessage } from './utils';
 
 // Message Status Enum
@@ -31,7 +31,7 @@ const CONSOLE_LOG_PREFIX = '[MessageService]';
  * Message engine that handles real-time transcription and subtitle rendering
  */
 export class MessageEngine {
-  constructor(rtcEngine, renderMode, callback, urlParams = {}) {
+  constructor(rtcEngine, renderMode, callback, urlParams = {}, messageProcessor = null) {
     // Private properties
     this._messageCache = {};
     this._messageCacheTimeout = DEFAULT_MESSAGE_CACHE_TIMEOUT;
@@ -45,6 +45,7 @@ export class MessageEngine {
     this._rtcEngine = rtcEngine;
     this._processedMessageIds = new Set(); // Track processed message IDs
     this._urlParams = urlParams; // Store URL params for continue message filtering
+    this._messageProcessor = messageProcessor; // Store message processor for Anam
 
     // Public properties
     this.messageList = [];
@@ -159,7 +160,12 @@ export class MessageEngine {
       return; // Don't process continue messages
     }
 
-        // If this is a user message, call the global function to clear the timeout
+    // Send agent messages to Anam avatar if processor is available
+    if (isAgentMessage && this._messageProcessor && message.text) {
+      this._messageProcessor(message.text, message.turn_id || "");
+    }
+
+    // If this is a user message, call the global function to clear the timeout
     if (isUserMessage && window.clearContinueMessageTimeout) {
       console.log("New user message detected in messageService, clearing continue timeout");
       window.clearContinueMessageTimeout();

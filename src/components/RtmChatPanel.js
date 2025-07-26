@@ -1,4 +1,4 @@
-// react/src/components/RtmChatPanel.js - Updated for Anam integration
+// src/components/RtmChatPanel.js
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
@@ -69,8 +69,6 @@ export const RtmChatPanel = ({
   const isPureChatMode = urlParams?.purechat === true;
   const isChatEnabled = isConnectInitiated || (isPureChatMode && rtmClient);
 
-  const channelName = urlParams?.channelName || agoraConfig.channelName || "";
-
   const getAvatarProfileUrl = useCallback((userId) => {
     if (userId === '0' || userId === 0 || (typeof userId === 'string' && userId.toLowerCase().includes('agent'))) {
       // For Anam, return a default avatar or get from configuration
@@ -79,16 +77,12 @@ export const RtmChatPanel = ({
     return null;
   }, []);
 
-  const getSenderName = useCallback((userId) => {
-    if (!userId || typeof userId !== 'string') return null;
-    const parts = userId.split('-');
-    return parts[0] || userId;
-  }, []);
-
   const getSenderInitial = useCallback((userId) => {
-    const name = getSenderName(userId);
+    if (!userId || typeof userId !== 'string') return '?';
+    const parts = userId.split('-');
+    const name = parts[0] || userId;
     return name ? name.charAt(0).toUpperCase() : '?';
-  }, [getSenderName]);
+  }, []);
 
   const getSenderColor = useCallback((userId) => {
     if (!userId || typeof userId !== 'string') return '#999999';

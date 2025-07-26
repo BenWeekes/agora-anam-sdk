@@ -1,3 +1,4 @@
+// src/hooks/useKeyboardAwareAvatarPosition.jsx
 import React from "react";
 import * as rdd from "react-device-detect";
 
@@ -6,6 +7,7 @@ function useKeyboardAwareAvatarPosition(
   setVideoSize,
   onKeyboardStateChange = () => {}
 ) {
+  // These are static constants, not reactive values
   const MainVideoContainer = containerElementId;
   const InputBoxContainer = "input-box-container";
 
@@ -102,7 +104,8 @@ function useKeyboardAwareAvatarPosition(
       // window.visualViewport.removeEventListener("resize", viewportHandler);
       window.visualViewport.removeEventListener("scroll", viewportHandler);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // These dependencies are intentionally omitted as they are static or callbacks
 }
 
 export default useKeyboardAwareAvatarPosition;
