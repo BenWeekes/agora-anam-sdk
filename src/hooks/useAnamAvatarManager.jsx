@@ -23,6 +23,7 @@ export default function useAnamAvatarManager({
   const [anamClient, setAnamClient] = useState(null);
   const [isAnamReady, setIsAnamReady] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [isStreamingStarted, setIsStreamingStarted] = useState(false);
   const messageQueueRef = useRef([]);
   const isProcessingRef = useRef(false);
 
@@ -30,7 +31,7 @@ export default function useAnamAvatarManager({
   eventHandlerRef.current = eventHandler;
 
   // Process message queue
-  const processMessageQueue = useCallback(() => {
+  const processMessageQueue = useCallback(async () => {
     if (isProcessingRef.current || messageQueueRef.current.length === 0) {
       return;
     }
@@ -41,24 +42,61 @@ export default function useAnamAvatarManager({
     if (anamClient && isAnamReady) {
       console.log("Sending message to Anam avatar:", nextMessage);
       
-      // According to docs, the method is talk()
-      anamClient.talk(nextMessage)
-        .then(() => {
-          console.log("Message sent successfully to Anam");
-        })
-        .catch((error) => {
-          console.error("Failed to send message to Anam:", error);
+      try {
+        // Try to send the message
+        await anamClient.talk(nextMessage);
+        console.log("Message sent successfully to Anam");
+        // Don't reset isProcessingRef here - let TALK_ENDED event handle it
+      } catch (error) {
+        console.error("Failed to send message to Anam:", error);
+        
+        // If the error is about not streaming, try to fix it
+        if (error.message && error.message.includes('not currently streaming')) {
+          console.log("Attempting to fix streaming state...");
+          try {
+            // Some Anam SDK versions might need to call stream() directly
+            if (anamClient.stream && typeof anamClient.stream === 'function') {
+              await anamClient.stream();
+              console.log("Called stream() method, retrying talk...");
+              
+              // Retry the talk command
+              await anamClient.talk(nextMessage);
+              console.log("Message sent successfully after stream fix");
+              // Don't reset isProcessingRef here - let TALK_ENDED event handle it
+            } else {
+              // If no stream method, try re-streaming to video element
+              const videoElement = document.getElementById('anam-avatar-video');
+              if (videoElement && !isStreamingStarted) {
+                await anamClient.streamToVideoAndAudioElements(videoElement.id);
+                setIsStreamingStarted(true);
+                console.log("Re-streamed to video element, retrying talk...");
+                
+                // Retry the talk command
+                await anamClient.talk(nextMessage);
+                console.log("Message sent successfully after re-stream");
+                // Don't reset isProcessingRef here - let TALK_ENDED event handle it
+              }
+            }
+          } catch (retryError) {
+            console.error("Failed to fix streaming state:", retryError);
+            isProcessingRef.current = false;
+            // Put message back in queue to try later
+            messageQueueRef.current.unshift(nextMessage);
+            return;
+          }
+        } else {
           isProcessingRef.current = false;
-          // Try next message
+          // Try next message immediately
           processMessageQueue();
-        });
+        }
+      }
     } else {
       console.warn("Anam client not ready, queuing message");
       // Put message back at front of queue
       messageQueueRef.current.unshift(nextMessage);
       isProcessingRef.current = false;
     }
-  }, [anamClient, isAnamReady]);
+  }, [anamClient, isAnamReady, isStreamingStarted]);
 
   // Initialize Anam client when session token is available
   useEffect(() => {
@@ -81,20 +119,37 @@ export default function useAnamAvatarManager({
         console.log("Has stopStreaming?", typeof client.stopStreaming === 'function');
         
         // Set up event listeners using event names
-        client.addListener(AnamEvent.SESSION_READY, () => {
+        client.addListener(AnamEvent.SESSION_READY, async () => {
           console.log("Anam SESSION_READY event fired!");
           setIsAnamReady(true);
           updateConnectionState(ConnectionState.AVATAR_READY);
           updateConnectionState(ConnectionState.AVATAR_LOADED);
           updateConnectionState(ConnectionState.AVATAR_WS_CONNECTED);
           callNativeAppFunction("anamSessionReady");
+          
+          // Start streaming after session is ready
+          try {
+            const videoElement = document.getElementById('anam-avatar-video');
+            if (videoElement && !isStreamingStarted) {
+              await client.streamToVideoAndAudioElements(videoElement.id);
+              setIsStreamingStarted(true);
+              console.log("Started streaming after SESSION_READY");
+            }
+          } catch (error) {
+            console.error("Failed to start streaming after SESSION_READY:", error);
+          }
         });
 
         client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
           console.log("Anam CONNECTION_CLOSED event fired!");
           setIsAnamReady(false);
+          setIsStreamingStarted(false);
           updateConnectionState(ConnectionState.AVATAR_WS_DISCONNECT);
           callNativeAppFunction("anamConnectionClosed");
+          
+          // Clear message queue when connection is closed
+          messageQueueRef.current = [];
+          isProcessingRef.current = false;
         });
 
         client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages) => {
@@ -111,18 +166,30 @@ export default function useAnamAvatarManager({
           console.log("Anam TALK_ENDED event fired!");
           eventHandlerRef.current["avatar-status-update"]?.({ avatarStatus: 0 });
           isProcessingRef.current = false;
-          // Process next message in queue
+          // Process next message in queue immediately
           processMessageQueue();
         });
 
         // Also add listeners for lowercase event names in case the SDK uses them
-        client.addListener('session_ready', () => {
+        client.addListener('session_ready', async () => {
           console.log("Anam session_ready event fired (lowercase)!");
           setIsAnamReady(true);
           updateConnectionState(ConnectionState.AVATAR_READY);
           updateConnectionState(ConnectionState.AVATAR_LOADED);
           updateConnectionState(ConnectionState.AVATAR_WS_CONNECTED);
           callNativeAppFunction("anamSessionReady");
+          
+          // Start streaming after session is ready
+          try {
+            const videoElement = document.getElementById('anam-avatar-video');
+            if (videoElement && !isStreamingStarted) {
+              await client.streamToVideoAndAudioElements(videoElement.id);
+              setIsStreamingStarted(true);
+              console.log("Started streaming after session_ready");
+            }
+          } catch (error) {
+            console.error("Failed to start streaming after session_ready:", error);
+          }
         });
 
         setAnamClient(client);
@@ -131,13 +198,15 @@ export default function useAnamAvatarManager({
         showToast("Failed to initialize Anam client", error.message, true);
       }
     }
-  }, [anamSessionToken, anamClient, updateConnectionState, showToast, processMessageQueue]);
+  }, [anamSessionToken, anamClient, updateConnectionState, showToast, processMessageQueue, isStreamingStarted]);
 
   // Handle talk ended to process queue
   useEffect(() => {
     if (anamClient) {
       const handleTalkEnded = () => {
+        console.log("TALK_ENDED event received, resetting processing flag");
         isProcessingRef.current = false;
+        // Process next message immediately
         processMessageQueue();
       };
 
@@ -194,6 +263,18 @@ export default function useAnamAvatarManager({
         const sessionResult = await anamClient.startSession();
         console.log("Anam session started successfully:", sessionResult);
         
+        // Start streaming immediately after session starts
+        try {
+          const videoElement = document.getElementById('anam-avatar-video');
+          if (videoElement && !isStreamingStarted) {
+            await anamClient.streamToVideoAndAudioElements(videoElement.id);
+            setIsStreamingStarted(true);
+            console.log("Started streaming after session start");
+          }
+        } catch (streamError) {
+          console.error("Failed to start streaming after session start:", streamError);
+        }
+        
         // If SESSION_READY event doesn't fire, set ready state after a delay
         setTimeout(() => {
           if (!isAnamReady) {
@@ -208,6 +289,7 @@ export default function useAnamAvatarManager({
       } catch (error) {
         console.error("Failed to start Anam session:", error);
         setSessionStarted(false);
+        setIsStreamingStarted(false);
         showToast("Avatar Connection Failed", error.message, true);
         updateConnectionState(ConnectionState.AVATAR_WS_DISCONNECT);
       }
@@ -216,7 +298,7 @@ export default function useAnamAvatarManager({
       // Session already started, just update state
       updateConnectionState(ConnectionState.AVATAR_WS_CONNECTED);
     }
-  }, [anamClient, sessionStarted, isAnamReady, updateConnectionState, showToast]);
+  }, [anamClient, sessionStarted, isAnamReady, isStreamingStarted, updateConnectionState, showToast]);
 
   const disconnectAvatar = useCallback(() => {
     if (anamClient) {
@@ -228,6 +310,7 @@ export default function useAnamAvatarManager({
       }
       setIsAnamReady(false);
       setSessionStarted(false);
+      setIsStreamingStarted(false);
       messageQueueRef.current = [];
       isProcessingRef.current = false;
       updateConnectionState(ConnectionState.AVATAR_WS_DISCONNECT);
