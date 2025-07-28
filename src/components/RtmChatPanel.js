@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
 import ExpandableChatInput from "./ExpandableChatInput";
+import Logger from "../utils/logger";
 
 /**
  * Shared function to process and filter RTM messages
@@ -20,7 +21,7 @@ const processRtmMessage = (message, currentUserId, processMessage, urlParams, is
       
       // If message becomes empty after command processing, don't display it
       if (processedText === "" || processedText.trim() === "") {
-        console.log("Message was entirely commands, not displaying:", message.content);
+        Logger.log("Message was entirely commands, not displaying:", message.content);
         return null;
       }
       
@@ -101,7 +102,7 @@ export const RtmChatPanel = ({
 
   useEffect(() => {
     if (isPureChatMode && !isConnectInitiated && liveSubtitles.length > 0) {
-      console.log("Preserving subtitle messages on purechat disconnect:", liveSubtitles.length);
+      Logger.log("Preserving subtitle messages on purechat disconnect:", liveSubtitles.length);
       
       const messagesToPreserve = liveSubtitles.filter(msg => {
         const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
@@ -117,7 +118,7 @@ export const RtmChatPanel = ({
                preserved.text === (newMsg.text || (newMsg.metadata && newMsg.metadata.text) || ""))
             )
           );
-          console.log("Adding", newCompleted.length, "new preserved messages");
+          Logger.log("Adding", newCompleted.length, "new preserved messages");
           return [...prevPreserved, ...newCompleted];
         });
       }
@@ -133,7 +134,7 @@ export const RtmChatPanel = ({
       const targetChannel = channel || (getMessageChannelName ? getMessageChannelName() : '') || '';
       const publishTarget = targetChannel ? `agent-${targetChannel}` : 'agent';
       
-      console.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory, "Target:", publishTarget);
+      Logger.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory, "Target:", publishTarget);
       
       if (rtmClient) {
         const options = {
@@ -142,12 +143,12 @@ export const RtmChatPanel = ({
         };
         
         await rtmClient.publish(publishTarget, message.trim(), options);
-        console.log("Message sent successfully via direct send to:", publishTarget);
+        Logger.log("Message sent successfully via direct send to:", publishTarget);
 
         const shouldAddToHistory = !skipHistory && (isPureChatMode && !isConnectInitiated);
         
         if (shouldAddToHistory) {
-          console.log("Adding user message to local history (purechat mode)");
+          Logger.log("Adding user message to local history (purechat mode)");
           setPendingRtmMessages((prev) => [...prev, {
             type: "user",
             time: Date.now(),
@@ -157,35 +158,35 @@ export const RtmChatPanel = ({
             isOwn: true,
           }]);
         } else {
-          console.log("Not adding to local history - message will echo back from agent or skipHistory=true");
+          Logger.log("Not adding to local history - message will echo back from agent or skipHistory=true");
         }
 
         return true;
       } else {
-        console.error("Direct send failed - rtmClient not available");
+        Logger.error("Direct send failed - rtmClient not available");
         return false;
       }
     } catch (error) {
-      console.error("Failed to send message via direct send:", error);
+      Logger.error("Failed to send message via direct send:", error);
       return false;
     }
   }, [rtmClient, agoraConfig.uid, getMessageChannelName, isPureChatMode, isConnectInitiated]);  
 
   useEffect(() => {
     if (registerDirectSend && rtmClient) {
-      console.log("Registering direct send function with rtmClient");
+      Logger.log("Registering direct send function with rtmClient");
       registerDirectSend(directSendMessage);
     }
   }, [registerDirectSend, rtmClient, directSendMessage]);
 
   const handleRtmMessageCallback = useCallback(
     (event) => {
-      console.warn('handleRtmMessageCallback', event);
+      Logger.warn('handleRtmMessageCallback', event);
       
       try {
         const { message, messageType, timestamp, publisher } = event;
         
-        console.log("[RTM] Message received:", {
+        Logger.log("[RTM] Message received:", {
           publisher,
           currentUserId: agoraConfig.uid,
           messageType,
@@ -336,11 +337,11 @@ export const RtmChatPanel = ({
               }
             }
           } catch (error) {
-            console.error("[RTM] Error processing binary message:", error);
+            Logger.error("[RTM] Error processing binary message:", error);
           }
         }
       } catch (error) {
-        console.error("Error processing RTM message:", error);
+        Logger.error("Error processing RTM message:", error);
       }
     },
     [agoraConfig.uid, processMessage, urlParams, isConnectInitiated]
@@ -349,33 +350,33 @@ export const RtmChatPanel = ({
   // Initialize MessageEngine for subtitles with Anam message processor
   useEffect(() => {
     if (isPureChatMode && !isConnectInitiated) {
-      console.log("Skipping MessageEngine initialization - purechat mode without agent connection");
+      Logger.log("Skipping MessageEngine initialization - purechat mode without agent connection");
       return;
     }
 
     if (!agoraClient) {
-      console.log("MessageEngine init blocked - no agoraClient");
+      Logger.log("MessageEngine init blocked - no agoraClient");
       return;
     }
     
     if (messageEngineRef.current) {
-      console.log("MessageEngine init blocked - already exists");
+      Logger.log("MessageEngine init blocked - already exists");
       return;
     }
     
     if (!isConnectInitiated) {
-      console.log("MessageEngine init blocked - not connected");
+      Logger.log("MessageEngine init blocked - not connected");
       return;
     }
    
-    console.log("Initializing MessageEngine with client:", agoraClient, "purechat mode:", isPureChatMode);
+    Logger.log("Initializing MessageEngine with client:", agoraClient, "purechat mode:", isPureChatMode);
 
     if (!messageEngineRef.current) {
       messageEngineRef.current = new MessageEngine(
         agoraClient,
         "auto",
         (messageList) => {
-          console.log(`Received ${messageList.length} subtitle messages (purechat: ${isPureChatMode})`);
+          Logger.log(`Received ${messageList.length} subtitle messages (purechat: ${isPureChatMode})`);
           if (messageList && messageList.length > 0) {
             setLiveSubtitles((prev) => {
               const newMessages = [...messageList];
@@ -403,7 +404,7 @@ export const RtmChatPanel = ({
         urlParams,
         processMessage // Pass the message processor for Anam avatar
       );
-      console.log("MessageEngine initialized successfully:", !!messageEngineRef.current, "purechat mode:", isPureChatMode);
+      Logger.log("MessageEngine initialized successfully:", !!messageEngineRef.current, "purechat mode:", isPureChatMode);
     } else {
       if (messageEngineRef.current.messageList.length > 0) {
         setLiveSubtitles([...messageEngineRef.current.messageList]);
@@ -412,7 +413,7 @@ export const RtmChatPanel = ({
 
     return () => {
       if (messageEngineRef.current) {
-        console.log("Cleaning up MessageEngine");
+        Logger.log("Cleaning up MessageEngine");
         messageEngineRef.current.cleanup();
         messageEngineRef.current = null;
       }
@@ -437,10 +438,10 @@ export const RtmChatPanel = ({
           .filter(msg => msg !== null);
 
         if (processedMessages.length > 0) {
-          console.log("Adding processed messages:", processedMessages);
+          Logger.log("Adding processed messages:", processedMessages);
           setPendingRtmMessages((prev) => [...prev, ...processedMessages]);
         } else {
-          console.log("All new messages were command-only, none added to chat");
+          Logger.log("All new messages were command-only, none added to chat");
         }
       }
     }
@@ -607,7 +608,7 @@ export const RtmChatPanel = ({
       (a, b) => a.time - b.time
     );
 
-    console.log("Combined messages count:", allMessages.length, "Subtitles:", subtitleMessages.length, "RTM:", typedMessages.length, "Preserved:", preservedSubtitleMessages.length);
+    Logger.log("Combined messages count:", allMessages.length, "Subtitles:", subtitleMessages.length, "RTM:", typedMessages.length, "Preserved:", preservedSubtitleMessages.length);
     setCombinedMessages(allMessages);
   }, [liveSubtitles, pendingRtmMessages, preservedSubtitleMessages, isConnectInitiated, isPureChatMode]);
 
@@ -615,7 +616,7 @@ export const RtmChatPanel = ({
     if (isConnectInitiated && messageEngineRef.current && !isPureChatMode) {
       const messageList = messageEngineRef.current.messageList;
       if (messageList.length > 0) {
-        console.log("Connection status changed, forcing message update");
+        Logger.log("Connection status changed, forcing message update");
         setLiveSubtitles([...messageList]);
       }
     }
@@ -709,7 +710,7 @@ export const RtmChatPanel = ({
     let senderInitial = null;
     let senderColor = null;
 
-    console.log("renderMessage debug:", {
+    Logger.debug("renderMessage debug:", {
       userId: message.userId,
       type: message.type,
       isOwn: message.isOwn,
@@ -730,7 +731,7 @@ export const RtmChatPanel = ({
       senderColor = getSenderColor(message.userId);
     }
 
-    console.log("Message display decision:", {
+    Logger.debug("Message display decision:", {
       showAvatar: !!avatarUrl,
       showInitialCircle,
       senderInitial,
