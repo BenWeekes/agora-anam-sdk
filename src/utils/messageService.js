@@ -135,6 +135,20 @@ export class MessageEngine {
    * It will also set the mode of the message engine if necessary.
    * @param {Object} message - The message object to process
    */
+// This is the updated handleMessage method for messageService.js
+// Replace the existing handleMessage method with this version
+
+  /**
+   * Process a message from the message service.
+   * This function is a one-stop shop for handling messages from the message service.
+   * It will filter out duplicate messages, messages with unknown types, and continue messages.
+   * It will also handle messages differently depending on their type (agent, user, message interrupt).
+   * It will also set the mode of the message engine if necessary.
+   * @param {Object} message - The message object to process
+   */
+  // Updated handleMessage method for messageService.js with better deduplication
+// Replace the handleMessage method with this version
+
   handleMessage(message) {
     if (message.message_id && this._processedMessageIds.has(message.message_id)) {
       Logger.debug(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id,message);
@@ -177,21 +191,45 @@ export class MessageEngine {
       const turnId = message.turn_id || "";
       
       if (isFinal) {
-        // Check if we've already sent this exact message for this turn
-        const previouslySentText = this._sentToAnamMessages.get(turnId);
-        if (previouslySentText !== message.text) {
+        // Create a unique key for this message attempt
+        const messageKey = `${turnId}-${message.text}`;
+        const now = Date.now();
+        
+        // Check if we've recently attempted to send this exact message
+        const lastAttempt = this._sentToAnamMessages.get(messageKey);
+        if (!lastAttempt || (now - lastAttempt.timestamp) > 1000) { // 1 second cooldown
           console.log(`[ANAM] Sending FINAL message directly for turn ${turnId}:`, message.text);
           
-          // Send the message directly - no queueing
-          // The processor will handle checking if avatar is ready
-          const sent = this._messageProcessor(message.text, turnId);
+          // Track the attempt with timestamp
+          this._sentToAnamMessages.set(messageKey, {
+            text: message.text,
+            timestamp: now,
+            attempting: true
+          });
           
-          // Only track as sent if it was actually sent successfully
-          if (sent) {
-            this._sentToAnamMessages.set(turnId, message.text);
-          }
+          // Send the message directly - no queueing
+          // Handle async processor properly
+          Promise.resolve(this._messageProcessor(message.text, turnId)).then(sent => {
+            // Update the tracking based on result
+            if (sent === true) {
+              this._sentToAnamMessages.set(messageKey, {
+                text: message.text,
+                timestamp: now,
+                sent: true
+              });
+              Logger.debug(`[ANAM] Message successfully sent for turn ${turnId}`);
+            } else {
+              // Remove from tracking if not sent, so it can be retried later
+              this._sentToAnamMessages.delete(messageKey);
+              Logger.debug(`[ANAM] Message not sent for turn ${turnId} - avatar not ready`);
+            }
+          }).catch(error => {
+            // Remove from tracking on error
+            this._sentToAnamMessages.delete(messageKey);
+            Logger.error(`[ANAM] Error sending message for turn ${turnId}:`, error);
+          });
         } else {
-          Logger.debug(`[ANAM] Skipping duplicate message for turn ${turnId}`);
+          Logger.debug(`[ANAM] Skipping duplicate message attempt for turn ${turnId} (cooldown active)`);
         }
       } else {
         Logger.debug(`[ANAM] Skipping partial message for turn ${turnId}:`, message.text?.slice(0, 50) + "...");
