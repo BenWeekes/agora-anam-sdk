@@ -1,5 +1,6 @@
 // src/utils/messageService.js
 import { decodeStreamMessage } from './utils';
+import Logger from './logger';
 
 // Message Status Enum
 export const MessageStatus = {
@@ -79,7 +80,7 @@ export class MessageEngine {
 
   setupInterval() {
     if (!this._isRunning) {
-      console.error(CONSOLE_LOG_PREFIX, 'Message service is not running');
+      Logger.error(CONSOLE_LOG_PREFIX, 'Message service is not running');
       return;
     }
     
@@ -109,7 +110,7 @@ export class MessageEngine {
 
   handleStreamMessage(stream) {
     if (!this._isRunning) {
-      console.warn(CONSOLE_LOG_PREFIX, 'Message service WAS not running');
+      Logger.warn(CONSOLE_LOG_PREFIX, 'Message service WAS not running');
       this._isRunning = true;
     }
     
@@ -125,9 +126,19 @@ export class MessageEngine {
     return messageText.trim() === this._urlParams.continue.trim();
   }
 
+/*************  ✨ Windsurf Command ⭐  *************/
+  /**
+   * Process a message from the message service.
+   * This function is a one-stop shop for handling messages from the message service.
+   * It will filter out duplicate messages, messages with unknown types, and continue messages.
+   * It will also handle messages differently depending on their type (agent, user, message interrupt).
+   * It will also set the mode of the message engine if necessary.
+   * @param {Object} message - The message object to process
+   */
+/*******  69c949eb-f502-400a-aaf0-d6fa7501a486  *******/
   handleMessage(message) {
     if (message.message_id && this._processedMessageIds.has(message.message_id)) {
-      console.warn(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id,message);
+      Logger.debug(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id,message);
       return;
     }
 
@@ -137,7 +148,7 @@ export class MessageEngine {
     }
     
     // Always log the message for debugging
-    console.debug(CONSOLE_LOG_PREFIX, 'Processing message:', 
+    Logger.debug(CONSOLE_LOG_PREFIX, 'Processing message:', 
       message.object, 
       message.turn_id, 
       message.message_id,
@@ -150,13 +161,13 @@ export class MessageEngine {
     const isMessageInterrupt = message.object === TranscriptionObjectType.MSG_INTERRUPTED;
       
     if (!isAgentMessage && !isUserMessage && !isMessageInterrupt) {
-      console.debug(CONSOLE_LOG_PREFIX, 'Unknown message type', message);
+      Logger.debug(CONSOLE_LOG_PREFIX, 'Unknown message type', message);
       return;
     }
 
     // Filter out continue messages from agent transcriptions
     if (isAgentMessage && this._isContinueMessage(message.text)) {
-      console.log("Filtered out continue message from subtitles:", message.text);
+      Logger.log("Filtered out continue message from subtitles:", message.text);
       return; // Don't process continue messages
     }
 
@@ -167,7 +178,7 @@ export class MessageEngine {
 
     // If this is a user message, call the global function to clear the timeout
     if (isUserMessage && window.clearContinueMessageTimeout) {
-      console.log("New user message detected in messageService, clearing continue timeout");
+      Logger.log("New user message detected in messageService, clearing continue timeout");
       window.clearContinueMessageTimeout();
     }
     
@@ -218,7 +229,7 @@ export class MessageEngine {
   handleTextMessage(message) {
     // Filter out continue messages
     if (this._isContinueMessage(message.text)) {
-      console.log("Filtered out continue message from text processing:", message.text);
+      Logger.log("Filtered out continue message from text processing:", message.text);
       return;
     }
 
@@ -294,7 +305,7 @@ export class MessageEngine {
   }
 
   handleMessageInterrupt(message) {
-    console.debug(CONSOLE_LOG_PREFIX, 'handleMessageInterrupt', message);
+    Logger.debug(CONSOLE_LOG_PREFIX, 'handleMessageInterrupt', message);
     const turn_id = message.turn_id;
     const start_ms = message.start_ms;
     
@@ -318,7 +329,7 @@ export class MessageEngine {
   handleWordAgentMessage(message) {
     // Filter out continue messages
     if (this._isContinueMessage(message.text)) {
-      console.log("Filtered out continue message from word processing:", message.text);
+      Logger.log("Filtered out continue message from word processing:", message.text);
       return;
     }
 
@@ -327,7 +338,7 @@ export class MessageEngine {
     const status = isFinal ? MessageStatus.END : 
                  (message.turn_status !== undefined ? message.turn_status : MessageStatus.IN_PROGRESS);
 
-    console.debug(
+    Logger.debug(
       CONSOLE_LOG_PREFIX,
       'handleWordAgentMessage',
       JSON.stringify({
@@ -384,7 +395,7 @@ export class MessageEngine {
 
   setMode(mode) {
     if (this._mode !== MessageEngineMode.AUTO) {
-      console.warn(
+      Logger.warn(
         CONSOLE_LOG_PREFIX,
         'Mode should only be set once, but it is set again',
         'current mode:',
@@ -394,7 +405,7 @@ export class MessageEngine {
     }
     
     if (mode === MessageEngineMode.AUTO) {
-      console.warn(
+      Logger.warn(
         CONSOLE_LOG_PREFIX,
         'Unknown mode should not be set again',
         'current mode:',
@@ -412,7 +423,7 @@ export class MessageEngine {
   }
 
   cleanup() {
-    console.debug(CONSOLE_LOG_PREFIX, 'Cleanup message service');
+    Logger.debug(CONSOLE_LOG_PREFIX, 'Cleanup message service');
     this._isRunning = false;
     
     // Clean up message cache
@@ -458,7 +469,7 @@ export class MessageEngine {
       
       // Check if total parts is known, skip if unknown
       if (input.part_sum === -1) {
-        console.debug(
+        Logger.debug(
           CONSOLE_LOG_PREFIX,
           'total parts unknown, waiting for further parts.'
         );
@@ -476,7 +487,7 @@ export class MessageEngine {
             this._messageCache[input.message_id] &&
             this._messageCache[input.message_id].length < input.part_sum
           ) {
-            console.debug(
+            Logger.debug(
               CONSOLE_LOG_PREFIX,
               input.message_id,
               'message cache timeout, drop it.'
@@ -507,11 +518,11 @@ export class MessageEngine {
           .join('');
 
         // Decode message
-        console.debug(CONSOLE_LOG_PREFIX, '[message]', atob(message));
+        Logger.debug(CONSOLE_LOG_PREFIX, '[message]', atob(message));
 
         const decodedMessage = JSON.parse(atob(message));
 
-        console.debug(CONSOLE_LOG_PREFIX, '[decodedMessage]', decodedMessage);
+        Logger.debug(CONSOLE_LOG_PREFIX, '[decodedMessage]', decodedMessage);
 
         // Callback
         callback?.(decodedMessage);
@@ -542,7 +553,7 @@ export class MessageEngine {
         user_id: data.user_id // Include user_id
       };
       
-      console.debug(
+      Logger.debug(
         CONSOLE_LOG_PREFIX,
         'Push to queue',
         JSON.stringify(newQueueItem)
@@ -554,7 +565,7 @@ export class MessageEngine {
     }
     
     // If found, update text, words (sorted with status) and turn_status
-    console.debug(
+    Logger.debug(
       CONSOLE_LOG_PREFIX,
       'Update queue item',
       JSON.stringify({ 
@@ -635,7 +646,7 @@ export class MessageEngine {
     );
     
     // Simplified logging - just basic info
-    console.debug(
+    Logger.debug(
       CONSOLE_LOG_PREFIX,
       `Processing turn ${queueItem.turn_id} (status: ${queueItem.status})`
     );
@@ -694,7 +705,7 @@ export class MessageEngine {
 
   _mutateChatHistory() {
     // Simplified logging - just count of messages
-    console.debug(
+    Logger.debug(
       CONSOLE_LOG_PREFIX,
       `Updated message list (${this.messageList.length} messages)`
     );
