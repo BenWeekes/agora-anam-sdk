@@ -47,6 +47,7 @@ export class MessageEngine {
     this._processedMessageIds = new Set(); // Track processed message IDs
     this._urlParams = urlParams; // Store URL params for continue message filtering
     this._messageProcessor = messageProcessor; // Store message processor for Anam
+    this._sentToAnamMessages = new Map(); // Track messages sent to Anam: turnId -> text
 
     // Public properties
     this.messageList = [];
@@ -172,8 +173,24 @@ export class MessageEngine {
     }
 
     // Send agent messages to Anam avatar if processor is available
+    // Only send FINAL messages to avoid cutting off speech
     if (isAgentMessage && this._messageProcessor && message.text) {
-      this._messageProcessor(message.text, message.turn_id || "");
+      const isFinal = message.final === true || message.turn_status === MessageStatus.END;
+      const turnId = message.turn_id || "";
+      
+      if (isFinal) {
+        // Check if we've already sent this exact message for this turn
+        const previouslySentText = this._sentToAnamMessages.get(turnId);
+        if (previouslySentText !== message.text) {
+          Logger.log(`[ANAM] Sending FINAL message for turn ${turnId}:`, message.text);
+          this._messageProcessor(message.text, turnId);
+          this._sentToAnamMessages.set(turnId, message.text);
+        } else {
+          Logger.debug(`[ANAM] Skipping duplicate message for turn ${turnId}`);
+        }
+      } else {
+        Logger.debug(`[ANAM] Skipping partial message for turn ${turnId}:`, message.text?.slice(0, 50) + "...");
+      }
     }
 
     // If this is a user message, call the global function to clear the timeout
@@ -442,6 +459,9 @@ export class MessageEngine {
     
     // Clean up mode
     this._mode = MessageEngineMode.AUTO;
+    
+    // Clean up Anam tracking
+    this._sentToAnamMessages.clear();
   }
 
   // Utils: Uint8Array -> string

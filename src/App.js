@@ -32,6 +32,7 @@ function App() {
   const isConnectInitiated = connectionState.app.connectInitiated;
   const isAppConnected = checkIfFullyConnected(connectionState)
   const [anamSessionToken, setAnamSessionToken] = useState(null);
+  const [waitingForAvatar, setWaitingForAvatar] = useState(false);
 
   // Utils
   const { toast, showToast } = useToast();
@@ -79,6 +80,7 @@ function App() {
   // Manage Anam avatar lifecycle and messaging
   const {
     anamClient,
+    isAnamReady,
     processAndSendMessageToAvatar,
     resetAvatarToDefault,
     connectAvatar,
@@ -169,19 +171,22 @@ function App() {
     }
   }, [urlParams, isAppConnected, contentManager]);
 
-
-// Connect to Anam avatar when we have session token
+  // Connect to Anam avatar when we have session token
   useEffect(() => {
-    if (anamSessionToken && connectionState.agent.connected && !connectionState.avatar.wsConnected && anamClient) {
-      console.log("App.js: Conditions met to connect avatar:", {
-        hasToken: !!anamSessionToken,
-        agentConnected: connectionState.agent.connected,
-        avatarNotConnected: !connectionState.avatar.wsConnected,
-        hasAnamClient: !!anamClient
-      });
+    if (anamSessionToken && !connectionState.avatar.wsConnected && anamClient) {
+      console.log("App.js: Have session token, connecting avatar...");
       connectAvatar();
     }
-  }, [anamSessionToken, connectionState.agent.connected, connectionState.avatar.wsConnected, anamClient, connectAvatar]);
+  }, [anamSessionToken, connectionState.avatar.wsConnected, anamClient, connectAvatar]);
+
+  // When avatar is ready and we're waiting for it, complete the Agora connection
+  useEffect(() => {
+    if (waitingForAvatar && isAnamReady) {
+      console.log("Avatar is ready, completing Agora connection...");
+      setWaitingForAvatar(false);
+      agoraConnection.completeAgoraConnection();
+    }
+  }, [waitingForAvatar, isAnamReady, agoraConnection]);
 
   // Toggle fullscreen mode
   const toggleFullscreen = () => {
@@ -210,6 +215,7 @@ function App() {
 
     // Clear Anam session token
     setAnamSessionToken(null);
+    setWaitingForAvatar(false);
 
     updateConnectionState(ConnectionState.DISCONNECT);
 
@@ -220,7 +226,7 @@ function App() {
     }
   }, [updateConnectionState, contentManager, isPureChatMode, resetAvatarToDefault, agoraConnection, disconnectAvatar, isFullscreen]);
 
-  // Connect Function for normal mode
+  // Connect Function for normal mode - Modified to wait for avatar
   const connectAgoraAnam = useCallback(async () => {
     updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
     
@@ -228,10 +234,23 @@ function App() {
       contentManager.unlockVideo();
     }
 
-    // Connect to Agora (which will also get Anam session token)
-    const result = await agoraConnection.connectToAgora()
-    if(!result) {
-      handleHangup()
+    // First, get the Anam session token from the agent endpoint
+    const agentResult = await agoraConnection.callAgentEndpoint(true);
+    if (!agentResult.success) {
+      handleHangup();
+      return;
+    }
+
+    // If we got a session token, wait for avatar to be ready
+    if (agentResult.anamSessionToken) {
+      console.log("Got Anam session token, waiting for avatar to be ready...");
+      setWaitingForAvatar(true);
+    } else {
+      // No Anam token, connect to Agora immediately
+      const result = await agoraConnection.completeAgoraConnection();
+      if (!result) {
+        handleHangup();
+      }
     }
 
   }, [agoraConnection, urlParams.contentType, urlParams.contentURL, contentManager, updateConnectionState, handleHangup]);
@@ -252,6 +271,8 @@ function App() {
       agoraClient: !!agoraClient.current,
       rtmClient: !!agoraConnection.rtmClient,
       anamClient: !!anamClient,
+      anamReady: isAnamReady,
+      waitingForAvatar,
       skin: skinType,
     });
   }
@@ -335,6 +356,13 @@ function App() {
               onHangUp={handleHangup}
               getProfileImage={getAvatarProfileImage}
             />
+          )}
+
+          {/* Show spinner if waiting for avatar */}
+          {waitingForAvatar && (
+            <div className="spinner-container">
+              <div className="spinner"></div>
+            </div>
           )}
 
           {/* Toast notification - placed inside avatar container */}
