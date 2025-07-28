@@ -100,6 +100,31 @@ function App() {
     }
   });
 
+  // Debug logging for connection state
+  useEffect(() => {
+    console.log("[STATE] Connection state changed:", {
+      isAppConnected,
+      isConnectInitiated,
+      avatar: {
+        ready: connectionState.avatar.ready,
+        loaded: connectionState.avatar.loaded,
+        wsConnected: connectionState.avatar.wsConnected
+      },
+      agent: connectionState.agent.connected,
+      agora: connectionState.agora.connected,
+      rtm: connectionState.rtm.connected
+    });
+  }, [connectionState, isAppConnected, isConnectInitiated]);
+
+  // Debug logging for state changes - moved here after isAnamReady is defined
+  useEffect(() => {
+    console.log("[STATE] waitingForAvatar changed to:", waitingForAvatar);
+  }, [waitingForAvatar]);
+
+  useEffect(() => {
+    console.log("[STATE] isAnamReady changed to:", isAnamReady);
+  }, [isAnamReady]);
+
   // Initialize Agora connection hook with Anam session token setter
   const agoraConnection = useAgoraConnection({
     agoraConfig,
@@ -181,10 +206,19 @@ function App() {
 
   // When avatar is ready and we're waiting for it, complete the Agora connection
   useEffect(() => {
+    console.log("[CONNECTION] Avatar ready check:", {
+      waitingForAvatar,
+      isAnamReady,
+      shouldComplete: waitingForAvatar && isAnamReady
+    });
+    
     if (waitingForAvatar && isAnamReady) {
-      console.log("Avatar is ready, completing Agora connection...");
+      console.log("[CONNECTION] Avatar is ready, completing Agora connection...");
+      const completeStartTime = performance.now();
       setWaitingForAvatar(false);
-      agoraConnection.completeAgoraConnection();
+      agoraConnection.completeAgoraConnection().then(success => {
+        console.log(`[CONNECTION] Agora connection completed in ${(performance.now() - completeStartTime).toFixed(0)}ms, success:`, success);
+      });
     }
   }, [waitingForAvatar, isAnamReady, agoraConnection]);
 
@@ -228,30 +262,31 @@ function App() {
 
   // Connect Function for normal mode - Modified to wait for avatar
   const connectAgoraAnam = useCallback(async () => {
+    console.log("[CONNECTION] === Starting connection flow ===");
+    const startTime = performance.now();
+    
     updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
     
     if (urlParams.contentType && urlParams.contentURL) {
       contentManager.unlockVideo();
     }
 
-    // First, get the Anam session token from the agent endpoint
-    const agentResult = await agoraConnection.callAgentEndpoint(true);
-    if (!agentResult.success) {
+    // Mark that we're waiting for avatar BEFORE starting the connection
+    // This ensures the state is set when avatar becomes ready
+    setWaitingForAvatar(true);
+
+    // Use the connectToAgora function which handles everything properly
+    const result = await agoraConnection.connectToAgora();
+    console.log(`[CONNECTION] Total connection time: ${(performance.now() - startTime).toFixed(0)}ms, result:`, result);
+    
+    if (!result) {
+      setWaitingForAvatar(false);
       handleHangup();
       return;
     }
 
-    // If we got a session token, wait for avatar to be ready
-    if (agentResult.anamSessionToken) {
-      console.log("Got Anam session token, waiting for avatar to be ready...");
-      setWaitingForAvatar(true);
-    } else {
-      // No Anam token, connect to Agora immediately
-      const result = await agoraConnection.completeAgoraConnection();
-      if (!result) {
-        handleHangup();
-      }
-    }
+    // The connectToAgora function will have stored pending data if there's an Anam token
+    // We just need to wait for the avatar to be ready
 
   }, [agoraConnection, urlParams.contentType, urlParams.contentURL, contentManager, updateConnectionState, handleHangup]);
 
