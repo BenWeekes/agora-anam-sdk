@@ -127,7 +127,6 @@ export class MessageEngine {
     return messageText.trim() === this._urlParams.continue.trim();
   }
 
-/*************  ✨ Windsurf Command ⭐  *************/
   /**
    * Process a message from the message service.
    * This function is a one-stop shop for handling messages from the message service.
@@ -136,7 +135,6 @@ export class MessageEngine {
    * It will also set the mode of the message engine if necessary.
    * @param {Object} message - The message object to process
    */
-/*******  69c949eb-f502-400a-aaf0-d6fa7501a486  *******/
   handleMessage(message) {
     if (message.message_id && this._processedMessageIds.has(message.message_id)) {
       Logger.debug(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id,message);
@@ -182,9 +180,16 @@ export class MessageEngine {
         // Check if we've already sent this exact message for this turn
         const previouslySentText = this._sentToAnamMessages.get(turnId);
         if (previouslySentText !== message.text) {
-          Logger.log(`[ANAM] Sending FINAL message for turn ${turnId}:`, message.text);
-          this._messageProcessor(message.text, turnId);
-          this._sentToAnamMessages.set(turnId, message.text);
+          console.log(`[ANAM] Sending FINAL message directly for turn ${turnId}:`, message.text);
+          
+          // Send the message directly - no queueing
+          // The processor will handle checking if avatar is ready
+          const sent = this._messageProcessor(message.text, turnId);
+          
+          // Only track as sent if it was actually sent successfully
+          if (sent) {
+            this._sentToAnamMessages.set(turnId, message.text);
+          }
         } else {
           Logger.debug(`[ANAM] Skipping duplicate message for turn ${turnId}`);
         }
