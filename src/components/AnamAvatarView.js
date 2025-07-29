@@ -1,5 +1,5 @@
 // src/components/AnamAvatarView.js
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 
 /**
  * Component to display the Anam.ai Avatar
@@ -16,7 +16,6 @@ export const AnamAvatarView = ({
   isPureChatMode = false,
 }) => {
   const videoRef = useRef(null);
-  const [isVideoReady, setIsVideoReady] = useState(false);
 
   // Debug log to check what props we're receiving
   useEffect(() => {

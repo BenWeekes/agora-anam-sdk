@@ -139,7 +139,7 @@ function App() {
     isFullyConnected: isAppConnected,
     setAnamSessionToken // Pass the setter to get Anam token from endpoint
   });
-  
+
   // Manage content display state and related data
   const contentManager = useContentManager(isConnectInitiated);
 
@@ -157,17 +157,17 @@ function App() {
 
   // Auto-connect for purechat mode
   const pureChatConnectionAttempted = useRef(false);
-  
+
   useEffect(() => {
-    const shouldConnect = connectionState.app.loaded && 
-                         isPureChatMode && 
-                         !isConnectInitiated && 
-                         !pureChatConnectionAttempted.current;
+    const shouldConnect = connectionState.app.loaded &&
+      isPureChatMode &&
+      !isConnectInitiated &&
+      !pureChatConnectionAttempted.current;
 
     if (shouldConnect) {
       console.log("Auto-connecting purechat mode (silent) - RTM only, no UI change");
       pureChatConnectionAttempted.current = true;
-      
+
       agoraConnection.connectToPureChat().catch((error) => {
         console.error("Purechat connection failed:", error);
         pureChatConnectionAttempted.current = false;
@@ -211,7 +211,7 @@ function App() {
       isAnamReady,
       shouldComplete: waitingForAvatar && isAnamReady
     });
-    
+
     if (waitingForAvatar && isAnamReady) {
       console.log("[CONNECTION] Avatar is ready, completing Agora connection...");
       const completeStartTime = performance.now();
@@ -235,7 +235,7 @@ function App() {
   // Handle hangup
   const handleHangup = useCallback(async () => {
     updateConnectionState(ConnectionState.DISCONNECTING);
-    
+
     contentManager.hideContent()
 
     // Reset the avatar
@@ -264,9 +264,9 @@ function App() {
   const connectAgoraAnam = useCallback(async () => {
     console.log("[CONNECTION] === Starting connection flow ===");
     const startTime = performance.now();
-    
+
     updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
-    
+
     if (urlParams.contentType && urlParams.contentURL) {
       contentManager.unlockVideo();
     }
@@ -278,7 +278,7 @@ function App() {
     // Use the connectToAgora function which handles everything properly
     const result = await agoraConnection.connectToAgora();
     console.log(`[CONNECTION] Total connection time: ${(performance.now() - startTime).toFixed(0)}ms, result:`, result);
-    
+
     if (!result) {
       setWaitingForAvatar(false);
       handleHangup();
@@ -299,7 +299,7 @@ function App() {
   }
 
   /* Console debug info instead of UI display */
-  if(process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "development") {
     console.log("Debug Info:", {
       purechat: isPureChatMode,
       connected: isConnectInitiated,
@@ -326,8 +326,8 @@ function App() {
       isContentLayoutWideOverlay || isMobileView
         ? "100%"
         : isContentLayoutWide
-        ? "50%"
-        : undefined,
+          ? "50%"
+          : undefined,
     height: isContentLayoutWideOverlay ? "50%" : undefined,
     position: "relative",
     display: "flex",
@@ -382,75 +382,74 @@ function App() {
         >
           <div id="main-video-container" style={{ width: "100%", height: "100%" }}>
 
-          {!isAppConnected && (
-            <ConnectScreen
-              avatarId={null} // No avatarId for Anam
-              isPureChatMode={isPureChatMode}
-              connectionState={connectionState}
-              onConnect={connectAgoraAnam}
-              onHangUp={handleHangup}
-              getProfileImage={getAvatarProfileImage}
-            />
-          )}
-
-          {/* Show spinner if waiting for avatar */}
-          {waitingForAvatar && (
-            <div className="spinner-container">
-              <div className="spinner"></div>
-            </div>
-          )}
-
-          {/* Toast notification - placed inside avatar container */}
-          <Toast {...toast} />
-
-          <div style={avatarWrapperStyle} >
-            {/* Content container - shown when content mode is active */}
-            <ContentViewer
-              contentData={contentManager.contentData}
-              style={{
-                height: isAvatarOverlay && "100%",
-                display: isContentLayoutDefault && isAppConnected ? "flex" : "none"
-              }}
-            />
-
-            {/* Avatar container wrapper */}
-            <div
-              className={`avatar-container-wrapper ${
-                isAvatarOverlay || (isContentLayoutDefault && isMobileView)
-                  ? "floating"
-                  : ""
-              }`}
-              style={{
-                height:
-                  isContentLayoutDefault && !isAvatarOverlay && !isMobileView
-                    ? "50%"
-                    : isAvatarOverlay && urlParams.avatarOverlayHeight ? `${urlParams.avatarOverlayHeight}px` : undefined,
-                width: isAvatarOverlay && urlParams.avatarOverlayWidth ? `${urlParams.avatarOverlayWidth}px` : undefined,
-                bottom: isAvatarOverlay && urlParams.avatarOverlayBottom !== undefined ? `${urlParams.avatarOverlayBottom}px` : undefined,
-                right: isAvatarOverlay && urlParams.avatarOverlayRight !== undefined ? `${urlParams.avatarOverlayRight}px` : undefined
-              }}
-            >
-              <AnamAvatarView
-                isAppConnected={isAppConnected}
-                isConnectInitiated={isConnectInitiated}
-                isAvatarLoaded={connectionState.avatar.loaded}
-                anamClient={anamClient}
-                isFullscreen={isFullscreen}
-                toggleFullscreen={toggleFullscreen}
-                toast={toast.visible ? toast : null}
+            {!isAppConnected && (
+              <ConnectScreen
+                avatarId={null} // No avatarId for Anam
                 isPureChatMode={isPureChatMode}
+                connectionState={connectionState}
+                onConnect={connectAgoraAnam}
+                onHangUp={handleHangup}
+                getProfileImage={getAvatarProfileImage}
+              />
+            )}
+
+            {/* Show spinner if waiting for avatar */}
+            {waitingForAvatar && isConnectInitiated && !isAppConnected && (
+              <div className="spinner-container">
+                <div className="spinner"></div>
+              </div>
+            )}
+
+            {/* Toast notification - placed inside avatar container */}
+            <Toast {...toast} />
+
+            <div style={avatarWrapperStyle} >
+              {/* Content container - shown when content mode is active */}
+              <ContentViewer
+                contentData={contentManager.contentData}
+                style={{
+                  height: isAvatarOverlay && "100%",
+                  display: isContentLayoutDefault && isAppConnected ? "flex" : "none"
+                }}
+              />
+
+              {/* Avatar container wrapper */}
+              <div
+                className={`avatar-container-wrapper ${isAvatarOverlay || (isContentLayoutDefault && isMobileView)
+                    ? "floating"
+                    : ""
+                  }`}
+                style={{
+                  height:
+                    isContentLayoutDefault && !isAvatarOverlay && !isMobileView
+                      ? "50%"
+                      : isAvatarOverlay && urlParams.avatarOverlayHeight ? `${urlParams.avatarOverlayHeight}px` : undefined,
+                  width: isAvatarOverlay && urlParams.avatarOverlayWidth ? `${urlParams.avatarOverlayWidth}px` : undefined,
+                  bottom: isAvatarOverlay && urlParams.avatarOverlayBottom !== undefined ? `${urlParams.avatarOverlayBottom}px` : undefined,
+                  right: isAvatarOverlay && urlParams.avatarOverlayRight !== undefined ? `${urlParams.avatarOverlayRight}px` : undefined
+                }}
               >
-                {/* Control buttons when connected */}
-                {isAppConnected && (
-                  <ControlButtons
-                    isConnectInitiated={isConnectInitiated}
-                    isMuted={agoraConnection.isMuted}
-                    toggleMute={agoraConnection.toggleMute}
-                    handleHangup={handleHangup}
-                  />
-                )}
-              </AnamAvatarView>
-            </div>
+                <AnamAvatarView
+                  isAppConnected={isAppConnected}
+                  isConnectInitiated={isConnectInitiated}
+                  isAvatarLoaded={connectionState.avatar.loaded}
+                  anamClient={anamClient}
+                  isFullscreen={isFullscreen}
+                  toggleFullscreen={toggleFullscreen}
+                  toast={toast.visible ? toast : null}
+                  isPureChatMode={isPureChatMode}
+                >
+                  {/* Control buttons when connected */}
+                  {isAppConnected && (
+                    <ControlButtons
+                      isConnectInitiated={isConnectInitiated}
+                      isMuted={agoraConnection.isMuted}
+                      toggleMute={agoraConnection.toggleMute}
+                      handleHangup={handleHangup}
+                    />
+                  )}
+                </AnamAvatarView>
+              </div>
             </div>
           </div>
         </div>
@@ -474,5 +473,5 @@ function App() {
     </div>
   );
 }
-    
+
 export default App;
