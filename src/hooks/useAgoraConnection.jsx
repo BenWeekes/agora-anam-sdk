@@ -113,6 +113,11 @@ export function useAgoraConnection({
         searchParams.append("name", agoraConfig.name);
       }
 
+      // Add avatarId parameter for Anam
+      if (urlParams.avatarId) {
+        searchParams.append("avatarId", urlParams.avatarId);
+      }
+
       let endpointToUse = currentAgentEndpoint;
       if (agoraConfig.endpoint) {        
         endpointToUse = agoraConfig.endpoint;
@@ -209,7 +214,7 @@ export function useAgoraConnection({
       }
       return { success: false };
     }
-  }, [agoraConfig, derivedChannelName, updateConnectionState, showToast, createAbortController, setAnamSessionToken]);
+  }, [agoraConfig, derivedChannelName, updateConnectionState, showToast, createAbortController, setAnamSessionToken, urlParams]);
 
   const disconnectAgentEndpoint = useCallback(async () => {
     disconnectAbortController()
