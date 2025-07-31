@@ -29,6 +29,7 @@ export default function useAnamAvatarManager({
     const anamClientRef = useRef(null); // Keep a ref to ensure consistency
     const reconnectAttempts = useRef(0);
     const maxReconnectAttempts = 3;
+    const readyDelayTimeoutRef = useRef(null); // New timeout for state synchronization delay
 
     const eventHandlerRef = useRef();
     eventHandlerRef.current = eventHandler;
@@ -65,6 +66,12 @@ export default function useAnamAvatarManager({
 
                 client.addListener(AnamEvent.CONNECTION_CLOSED, (event) => {
                     console.log("Anam CONNECTION_CLOSED event fired!", event);
+
+                    // Clear any pending ready delay timeout
+                    if (readyDelayTimeoutRef.current) {
+                        clearTimeout(readyDelayTimeoutRef.current);
+                        readyDelayTimeoutRef.current = null;
+                    }
 
                     // Mark connection as closed to prevent further operations
                     setConnectionClosed(true);
@@ -142,7 +149,7 @@ export default function useAnamAvatarManager({
                 showToast("Failed to initialize Anam client", error.message, true);
             }
         }
-    }, [anamSessionToken, connectionClosed]); // Add connectionClosed to dependencies
+    }, [anamSessionToken, connectionClosed, updateConnectionState, showToast, isStreamingStarted]);
 
     // Function to send message to Anam avatar - DIRECT, no queue
     const sendMessageToAvatar = useCallback(async (message) => {
@@ -216,6 +223,34 @@ export default function useAnamAvatarManager({
         }
     }, [isAnamReady, connectionClosed]);
 
+    // Helper function to mark avatar as ready with delay for state synchronization
+    const markAvatarAsReady = useCallback(() => {
+        console.log("Preparing to mark avatar as ready with synchronization delay...");
+        
+        // Clear any existing ready delay timeout
+        if (readyDelayTimeoutRef.current) {
+            clearTimeout(readyDelayTimeoutRef.current);
+        }
+
+        // Set a small delay to ensure all state updates have propagated
+        readyDelayTimeoutRef.current = setTimeout(() => {
+            console.log("State synchronization delay completed, marking avatar as ready");
+            setIsAnamReady(true);
+            updateConnectionState(ConnectionState.AVATAR_READY);
+            updateConnectionState(ConnectionState.AVATAR_LOADED);
+            updateConnectionState(ConnectionState.AVATAR_WS_CONNECTED);
+            callNativeAppFunction("anamSessionReady");
+
+            // Clear any pending session ready timeout
+            if (sessionReadyTimeoutRef.current) {
+                clearTimeout(sessionReadyTimeoutRef.current);
+                sessionReadyTimeoutRef.current = null;
+            }
+
+            readyDelayTimeoutRef.current = null;
+        }, 150); // 150ms delay to ensure state consistency
+    }, [updateConnectionState]);
+
     const connectAvatar = useCallback(async () => {
         const client = anamClientRef.current;
 
@@ -260,19 +295,9 @@ export default function useAnamAvatarManager({
                         setIsStreamingStarted(true);
                         console.log("Started streaming immediately after session start");
 
-                        // Now that both session and streaming are ready, mark avatar as ready
-                        console.log("Both session and streaming ready, marking avatar as ready");
-                        setIsAnamReady(true);
-                        updateConnectionState(ConnectionState.AVATAR_READY);
-                        updateConnectionState(ConnectionState.AVATAR_LOADED);
-                        updateConnectionState(ConnectionState.AVATAR_WS_CONNECTED);
-                        callNativeAppFunction("anamSessionReady");
-
-                        // Clear any pending timeout
-                        if (sessionReadyTimeoutRef.current) {
-                            clearTimeout(sessionReadyTimeoutRef.current);
-                            sessionReadyTimeoutRef.current = null;
-                        }
+                        // Now that both session and streaming are ready, mark avatar as ready with delay
+                        console.log("Both session and streaming ready, preparing to mark avatar as ready");
+                        markAvatarAsReady();
                     }
                 } catch (streamError) {
                     console.error("Failed to start streaming after session start:", streamError);
@@ -286,7 +311,7 @@ export default function useAnamAvatarManager({
                         console.warn("Streaming already active - possible state mismatch");
                         // Try to recover by setting streaming as started
                         setIsStreamingStarted(true);
-                        setIsAnamReady(true);
+                        markAvatarAsReady();
                     } else {
                         showToast("Failed to start avatar streaming", streamError.message, true);
                     }
@@ -310,7 +335,7 @@ export default function useAnamAvatarManager({
             // Session already started, just update state
             updateConnectionState(ConnectionState.AVATAR_WS_CONNECTED);
         }
-    }, [sessionStarted, connectionClosed, updateConnectionState, showToast]);
+    }, [sessionStarted, connectionClosed, updateConnectionState, showToast, markAvatarAsReady]);
 
     const disconnectAvatar = useCallback(() => {
         const client = anamClientRef.current;
@@ -323,6 +348,13 @@ export default function useAnamAvatarManager({
             } catch (error) {
                 console.error("Error stopping Anam streaming:", error);
             }
+            
+            // Clear any pending ready delay timeout
+            if (readyDelayTimeoutRef.current) {
+                clearTimeout(readyDelayTimeoutRef.current);
+                readyDelayTimeoutRef.current = null;
+            }
+            
             setIsAnamReady(false);
             setSessionStarted(false);
             setIsStreamingStarted(false);
@@ -344,6 +376,9 @@ export default function useAnamAvatarManager({
         return () => {
             if (sessionReadyTimeoutRef.current) {
                 clearTimeout(sessionReadyTimeoutRef.current);
+            }
+            if (readyDelayTimeoutRef.current) {
+                clearTimeout(readyDelayTimeoutRef.current);
             }
         };
     }, []);

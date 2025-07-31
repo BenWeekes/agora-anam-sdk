@@ -254,44 +254,45 @@ export function useAgoraConnection({
   }, [agentId, disconnectAbortController])
 
   // Function to complete Agora connection after avatar is ready
-const completeAgoraConnection = useCallback(async () => {
-  console.log("[CONNECTION] completeAgoraConnection called, pendingConnectionData:", pendingConnectionData);
-  
-  if (pendingConnectionData) {
-    const { token, uid } = pendingConnectionData;
-    console.log("[CONNECTION] Using pending connection data, token:", !!token, "uid:", uid);
+  const completeAgoraConnection = useCallback(async () => {
+    console.log("[CONNECTION] completeAgoraConnection called, pendingConnectionData:", pendingConnectionData);
     
-    // Update Agora config with token and uid
-    setAgoraConfig(prev => ({
-      ...prev,
-      token: token,
-      uid: uid
-    }));
+    if (pendingConnectionData) {
+      const { token, uid } = pendingConnectionData;
+      console.log("[CONNECTION] Using pending connection data, token:", !!token, "uid:", uid);
+      
+      // Update Agora config with token and uid
+      setAgoraConfig(prev => ({
+        ...prev,
+        token: token,
+        uid: uid
+      }));
+      
+      let rtmClient = agoraRTM.rtmClient;
+      if (!rtmClient) {
+        console.log("[CONNECTION] Connecting to RTM...");
+        rtmClient = await agoraRTM.connectToRtm(token, uid);
+      }
+      
+      console.log("[CONNECTION] Connecting to Agora RTC for stream messages, purechat mode:", urlParams.purechat);
+      const rtcSuccess = await agoraRTC.connectToAgoraRTC(token, uid);
     
-    let rtmClient = agoraRTM.rtmClient;
-    if (!rtmClient) {
-      console.log("[CONNECTION] Connecting to RTM...");
-      rtmClient = await agoraRTM.connectToRtm(token, uid);
-    }
-    
-    console.log("[CONNECTION] Connecting to Agora RTC for stream messages, purechat mode:", urlParams.purechat);
-    const rtcSuccess = await agoraRTC.connectToAgoraRTC(token, uid);
-  
-    if (!rtcSuccess || !rtmClient) {
-      showToast("Connection Error", "Failed to connect to Agora", true);    
+      if (!rtcSuccess || !rtmClient) {
+        showToast("Connection Error", "Failed to connect to Agora", true);    
+        return false;
+      }
+      
+      setPendingConnectionData(null);
+      console.log("[CONNECTION] Agora connection completed successfully");
+      return true;
+    } else {
+      // This should not happen if we're doing the flow correctly
+      console.error("[CONNECTION] ERROR: completeAgoraConnection called without pending data!");
+      console.error("[CONNECTION] This indicates a logic error in the connection flow");
       return false;
     }
-    
-    setPendingConnectionData(null);
-    console.log("[CONNECTION] Agora connection completed successfully");
-    return true;
-  } else {
-    // This should not happen if we're doing the flow correctly
-    console.error("[CONNECTION] ERROR: completeAgoraConnection called without pending data!");
-    console.error("[CONNECTION] This indicates a logic error in the connection flow");
-    return false;
-  }
-}, [pendingConnectionData, agoraRTC, agoraRTM, showToast, urlParams.purechat, setAgoraConfig]);
+  }, [pendingConnectionData, agoraRTC, agoraRTM, showToast, urlParams.purechat, setAgoraConfig]);
+
   // Connect to both Agora services
   const connectToAgora = useCallback(async () => {
     updateConnectionState(ConnectionState.AGORA_CONNECTING);
@@ -325,7 +326,7 @@ const completeAgoraConnection = useCallback(async () => {
         return true; // Return true to indicate initial success
       }
       
-      // No Anam token, connect immediately
+      // No Anam token, connect immediately (fallback for non-Anam scenarios)
       let rtmClient = agoraRTM.rtmClient;
       if (!rtmClient) {
         rtmClient = await agoraRTM.connectToRtm(token, uid);
