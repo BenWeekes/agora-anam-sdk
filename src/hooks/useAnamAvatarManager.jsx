@@ -30,6 +30,7 @@ export default function useAnamAvatarManager({
     const reconnectAttempts = useRef(0);
     const maxReconnectAttempts = 3;
     const readyDelayTimeoutRef = useRef(null); // New timeout for state synchronization delay
+    const isIntentionalDisconnect = useRef(false); // Track intentional disconnects
 
     const eventHandlerRef = useRef();
     eventHandlerRef.current = eventHandler;
@@ -87,15 +88,23 @@ export default function useAnamAvatarManager({
                         sessionReadyTimeoutRef.current = null;
                     }
 
-                    // Show error to user
-                    const reason = event?.reason || "Connection to avatar server was lost";
-                    showToast("Avatar Connection Lost", reason, true);
+                    // Only show error toast if this wasn't an intentional disconnect
+                    if (!isIntentionalDisconnect.current) {
+                        // Show error to user
+                        const reason = event?.reason || "Connection to avatar server was lost";
+                        showToast("Avatar Connection Lost", reason, true);
 
-                    // Don't attempt to reconnect if server explicitly closed the connection
-                    if (reason.includes("problem with our servers")) {
-                        console.error("Server-side error detected, not attempting reconnect");
-                        reconnectAttempts.current = maxReconnectAttempts; // Prevent reconnection
+                        // Don't attempt to reconnect if server explicitly closed the connection
+                        if (reason.includes("problem with our servers")) {
+                            console.error("Server-side error detected, not attempting reconnect");
+                            reconnectAttempts.current = maxReconnectAttempts; // Prevent reconnection
+                        }
+                    } else {
+                        console.log("Intentional disconnect - not showing error toast");
                     }
+
+                    // Reset the intentional disconnect flag
+                    isIntentionalDisconnect.current = false;
                 });
 
                 client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages) => {
@@ -341,6 +350,9 @@ export default function useAnamAvatarManager({
         const client = anamClientRef.current;
         if (client) {
             try {
+                // Mark this as an intentional disconnect
+                isIntentionalDisconnect.current = true;
+                
                 // According to docs, the method is stopStreaming()
                 if (isStreamingStarted) {
                     client.stopStreaming();

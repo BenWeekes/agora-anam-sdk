@@ -393,13 +393,13 @@ function App() {
               />
             )}
 
-            {/* Show spinner if waiting for avatar */}
+            {/* Show spinner if waiting for avatar
             {waitingForAvatar && isConnectInitiated && !isAppConnected && (
               <div className="spinner-container">
                 <div className="spinner"></div>
               </div>
             )}
-
+ */}
             {/* Toast notification - placed inside avatar container */}
             <Toast {...toast} />
 
