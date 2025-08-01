@@ -205,8 +205,8 @@ body {
 @media (orientation: portrait) {
   .left-section {
     width: 100%;
-    height: max(33.33%, 250px);
-    min-height: max(33.33%, 250px);
+    height: max(50%, 350px);
+    min-height: max(50%, 350px);
   }
 
   /* Avatar container becomes floating in content mode on mobile */
